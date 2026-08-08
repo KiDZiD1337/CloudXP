@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gamified Habits</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .card { background: #1e1e1e; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); text-align: center; max-width: 400px; width: 90%; }
+    button { background-color: #4285F4; color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
+    button:hover { background-color: #357ae8; }
+    .profile-info { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>Gamified Habits 🎮</h1>
+    <p id="status-text">Logga in för att påbörja ditt äventyr.</p>
+    <button id="login-btn">Logga in med Google</button>
+    
+    <div id="profile" class="profile-info">
+      <h2 id="user-name">Välkommen!</h2>
+      <p>XP: <span id="user-xp">0</span> | Level: <span id="user-level">1</span></p>
+      <button id="logout-btn" style="background-color: #e53935;">Logga ut</button>
+    </div>
+  </div>
+
+  <script>
+    // HÄR ÄR DEN KORREKTA ADRESSEN FRÅN DIN BILD:
+    const SUPABASE_URL = 'https://phhglvauynccbcpdnjqw.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_ASdxmwP7tzMXRtprVoaM2w_1maNYHQG'; 
+
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const { error } = await db.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) alert('Fel: ' + error.message);
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await db.auth.signOut();
+      window.location.reload();
+    });
+
+    async function checkUser() {
+      const { data: { session } } = await db.auth.getSession();
+      
+      if (session) {
+        document.getElementById('login-btn').style.display = 'none';
+        document.getElementById('status-text').style.display = 'none';
+        document.getElementById('profile').style.display = 'block';
+        document.getElementById('user-name').innerText = 'Hej ' + (session.user.user_metadata.full_name || 'Äventyrare') + '!';
+      }
+    }
+
+    checkUser();
+  </script>
+</body>
+</html>
