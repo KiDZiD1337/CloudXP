@@ -14,11 +14,50 @@
     .back-btn:hover { background: #444; }
     
     .admin-card { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
-    .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1rem; text-align: left; }
+    .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1rem; text-align: left; position: relative; }
     .form-row { display: flex; gap: 1rem; }
     input, select { padding: 10px; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: white; font-size: 14px; }
     button { background-color: #7b1fa2; color: white; border: none; padding: 10px 18px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; }
     button:hover { background-color: #6a1b9a; }
+
+    /* Kontextuellt Sökfält & Dropdown */
+    .search-results-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #252525;
+      border: 1px solid #444;
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .search-result-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #333;
+    }
+    .search-result-item:hover { background: #333; }
+    .target-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #4a148c;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      width: fit-content;
+      margin-top: 4px;
+    }
+    .target-chip span { cursor: pointer; font-size: 14px; color: #ff8a80; }
 
     .action-btn { background-color: #2e7d32; font-size: 12px; padding: 6px 10px; border-radius: 4px; }
     .action-btn:hover { background-color: #1b5e20; }
@@ -56,11 +95,20 @@
               <label>Titel / Beskrivning:</label>
               <input type="text" id="quest-title" placeholder="t.ex. Spring 5km eller Diska berget i köket" required>
             </div>
+            
+            <!-- Kontextuellt Sökfält -->
             <div class="form-group" style="flex: 1;">
-              <label>Mottagare:</label>
-              <select id="quest-target">
-                <option value="all">🌍 Alla Användare (Globalt)</option>
-              </select>
+              <label>Mottagare (Sök Spelare eller Hushåll):</label>
+              <input type="text" id="target-search-input" placeholder="🌍 Alla (Sök för att begränsa...)" autocomplete="off">
+              <div id="search-results" class="search-results-dropdown"></div>
+              
+              <input type="hidden" id="selected-target-type" value="all">
+              <input type="hidden" id="selected-target-id" value="">
+              
+              <div id="active-target-chip" style="display: none;" class="target-chip">
+                <span id="chip-text">🌍 Alla Användare</span>
+                <span onclick="resetTargetSelection()">✖</span>
+              </div>
             </div>
           </div>
 
@@ -129,6 +177,8 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_ASdxmwP7tzMXRtprVoaM2w_1maNYHQG'; 
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    let searchDebounce = null;
+
     async function initAdmin() {
       const { data: { session } } = await db.auth.getSession();
 
@@ -151,6 +201,94 @@
       document.getElementById('admin-content').style.display = 'block';
       loadCrmData();
       loadQuestPool();
+      setupContextualSearch();
+    }
+
+    // Kontextuell söklogik (Debounced)
+    function setupContextualSearch() {
+      const input = document.getElementById('target-search-input');
+      const resultsDiv = document.getElementById('search-results');
+
+      input.addEventListener('input', (e) => {
+        clearTimeout(searchDebounce);
+        const query = e.target.value.trim();
+
+        if (query.length < 2) {
+          resultsDiv.style.display = 'none';
+          return;
+        }
+
+        searchDebounce = setTimeout(async () => {
+          // Sök parallellt i användare och hushåll
+          const { data: users } = await db.from('profiles').select('id, full_name, role').ilike('full_name', `%${query}%`).limit(5);
+          const { data: houses } = await db.from('households').select('id, name, invite_code').ilike('name', `%${query}%`).limit(5);
+
+          resultsDiv.innerHTML = '';
+          let count = 0;
+
+          if (users && users.length > 0) {
+            users.forEach(u => {
+              count++;
+              const div = document.createElement('div');
+              div.className = 'search-result-item';
+              div.innerHTML = `<span>👤 ${u.full_name || 'Anonym'}</span><span style="color:#aaa;">Spelare</span>`;
+              div.onclick = () => selectTarget('user', u.id, `👤 Spelare: ${u.full_name || 'Anonym'}`);
+              resultsDiv.appendChild(div);
+            });
+          }
+
+          if (houses && houses.length > 0) {
+            houses.forEach(h => {
+              count++;
+              const div = document.createElement('div');
+              div.className = 'search-result-item';
+              div.innerHTML = `<span>🏠 ${h.name}</span><span style="color:#aaa;">Kod: ${h.invite_code}</span>`;
+              div.onclick = () => selectTarget('house', h.id, `🏠 Hem: ${h.name}`);
+              resultsDiv.appendChild(div);
+            });
+          }
+
+          if (count === 0) {
+            resultsDiv.innerHTML = '<div class="search-result-item" style="color:#888;">Inga träffar hittades.</div>';
+          }
+
+          resultsDiv.style.display = 'block';
+        }, 300);
+      });
+
+      // Dölj dropdown om man klickar utanför
+      document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !resultsDiv.contains(e.target)) {
+          resultsDiv.style.display = 'none';
+        }
+      });
+    }
+
+    function selectTarget(type, id, label) {
+      document.getElementById('selected-target-type').value = type;
+      document.getElementById('selected-target-id').value = id;
+      
+      const chip = document.getElementById('active-target-chip');
+      const chipText = document.getElementById('chip-text');
+      const input = document.getElementById('target-search-input');
+      const resultsDiv = document.getElementById('search-results');
+
+      chipText.innerText = label;
+      chip.style.display = 'inline-flex';
+      input.style.display = 'none';
+      resultsDiv.style.display = 'none';
+    }
+
+    function resetTargetSelection() {
+      document.getElementById('selected-target-type').value = 'all';
+      document.getElementById('selected-target-id').value = '';
+      
+      const chip = document.getElementById('active-target-chip');
+      const input = document.getElementById('target-search-input');
+
+      chip.style.display = 'none';
+      input.style.display = 'block';
+      input.value = '';
     }
 
     document.getElementById('publish-quest-form').addEventListener('submit', async (e) => {
@@ -160,16 +298,12 @@
       const type = document.getElementById('quest-type').value;
       const xp = parseInt(document.getElementById('quest-xp').value);
       const coins = parseInt(document.getElementById('quest-coins').value);
-      const targetVal = document.getElementById('quest-target').value;
+      
+      const targetType = document.getElementById('selected-target-type').value;
+      const targetId = document.getElementById('selected-target-id').value;
 
-      let targetUserId = null;
-      let targetHouseholdId = null;
-
-      if (targetVal.startsWith('user_')) {
-        targetUserId = targetVal.replace('user_', '');
-      } else if (targetVal.startsWith('house_')) {
-        targetHouseholdId = targetVal.replace('house_', '');
-      }
+      let targetUserId = targetType === 'user' ? targetId : null;
+      let targetHouseholdId = targetType === 'house' ? targetId : null;
 
       const { error } = await db.rpc('publish_global_quest', {
         quest_title: title,
@@ -186,6 +320,7 @@
       } else {
         alert(`Utmaningen "${title}" har publicerats!`);
         document.getElementById('quest-title').value = '';
+        resetTargetSelection();
         loadQuestPool();
       }
     });
@@ -229,39 +364,13 @@
 
     async function loadCrmData() {
       const { data: profiles } = await db.from('profiles').select('*');
-      const { data: households } = await db.from('households').select('*');
       const { data: logs } = await db.from('habit_logs').select('user_id');
 
       const tbody = document.getElementById('user-table-body');
       tbody.innerHTML = '';
 
-      const targetSelect = document.getElementById('quest-target');
-      targetSelect.innerHTML = '<option value="all">🌍 Alla Användare (Globalt)</option>';
-
-      // Fyll på med hushåll i rullgardinen
-      if (households && households.length > 0) {
-        const houseOptGroup = document.createElement('optgroup');
-        houseOptGroup.label = '🏠 Hushåll / Grupper';
-        households.forEach(h => {
-          const opt = document.createElement('option');
-          opt.value = `house_${h.id}`;
-          opt.innerText = `🏠 Hem: ${h.name} (${h.invite_code})`;
-          houseOptGroup.appendChild(opt);
-        });
-        targetSelect.appendChild(houseOptGroup);
-      }
-
-      // Fyll på med enskilda användare i rullgardinen
       if (profiles && profiles.length > 0) {
-        const userOptGroup = document.createElement('optgroup');
-        userOptGroup.label = '👤 Enskilda Spelare';
         profiles.forEach(p => {
-          const opt = document.createElement('option');
-          opt.value = `user_${p.id}`;
-          opt.innerText = `👤 Spelare: ${p.full_name || 'Anonym'} (${p.role})`;
-          userOptGroup.appendChild(opt);
-
-          // Fyll i användartabellen nedanför
           const completedCount = logs ? logs.filter(log => log.user_id === p.id).length : 0;
           const tr = document.createElement('tr');
           tr.innerHTML = `
@@ -274,7 +383,6 @@
           `;
           tbody.appendChild(tr);
         });
-        targetSelect.appendChild(userOptGroup);
       }
     }
 
