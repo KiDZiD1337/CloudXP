@@ -19,14 +19,13 @@
     .xp-bar-bg { background: #2a2a2a; height: 10px; border-radius: 5px; overflow: hidden; width: 100%; }
     .xp-bar-fill { background: linear-gradient(90deg, #ff9800, #ffeb3b); height: 100%; width: 0%; transition: width 0.4s ease; }
 
-    /* Flikar för Hushåll och Global Topplista */
-    .tab-container { display: flex; gap: 8px; margin-top: 1.2rem; border-bottom: 1px solid #333; padding-bottom: 8px; }
-    .tab-btn { background: #2a2a2a; color: #aaa; border: none; padding: 8px 14px; font-size: 12px; border-radius: 6px; cursor: pointer; flex: 1; }
-    .tab-btn.active { background: #388e3c; color: white; }
-
-    .social-card { background: #2a2a2a; padding: 12px; border-radius: 8px; margin-top: 8px; text-align: left; }
+    .social-card { background: #2a2a2a; padding: 14px; border-radius: 8px; margin-top: 1.2rem; text-align: left; }
     .social-card h3 { margin: 0 0 8px 0; font-size: 14px; color: #4caf50; display: flex; justify-content: space-between; align-items: center; }
+    .social-card h3.global-title { color: #ff9800; }
+    
     .member-item { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #333; }
+    .member-item:last-child { border-bottom: none; }
+    
     .household-form { display: flex; gap: 6px; margin-top: 8px; }
     .household-form input { flex: 1; padding: 6px 10px; border-radius: 4px; border: 1px solid #444; background: #1e1e1e; color: white; font-size: 12px; }
     .household-form button { padding: 6px 12px; font-size: 12px; background-color: #388e3c; }
@@ -69,21 +68,14 @@
         </div>
       </div>
 
-      <!-- Sociala Flikar -->
-      <div class="tab-container">
-        <button id="tab-house-btn" class="tab-btn active" onclick="switchSocialTab('house')">🏠 Mitt Hem</button>
-        <button id="tab-global-btn" class="tab-btn" onclick="switchSocialTab('global')">🏆 Global Topplista</button>
-      </div>
-
-      <!-- Hushållssektion -->
+      <!-- Separata Kort -->
       <div class="social-card" id="household-section">
         <h3>🏠 Mitt Hem <span id="invite-code-display" style="font-size: 11px; color: #aaa;"></span></h3>
         <div id="household-content">Laddar hem...</div>
       </div>
 
-      <!-- Global Leaderboard Sektion -->
-      <div class="social-card" id="global-section" style="display: none;">
-        <h3>🏆 Top 10 Spelare Globalt</h3>
+      <div class="social-card" id="global-section">
+        <h3 class="global-title">🏆 Global Leaderboard (Top 10)</h3>
         <div id="global-content">Laddar topplista...</div>
       </div>
 
@@ -115,26 +107,6 @@
       await db.auth.signOut();
       window.location.reload();
     });
-
-    function switchSocialTab(tab) {
-      const houseSec = document.getElementById('household-section');
-      const globalSec = document.getElementById('global-section');
-      const houseBtn = document.getElementById('tab-house-btn');
-      const globalBtn = document.getElementById('tab-global-btn');
-
-      if (tab === 'house') {
-        houseSec.style.display = 'block';
-        globalSec.style.display = 'none';
-        houseBtn.classList.add('active');
-        globalBtn.classList.remove('active');
-      } else {
-        houseSec.style.display = 'none';
-        globalSec.style.display = 'block';
-        houseBtn.classList.remove('active');
-        globalBtn.classList.add('active');
-        loadGlobalLeaderboard();
-      }
-    }
 
     function updateXpBar(xp, level) {
       const currentLevelBaseXp = (level - 1) * 100;
@@ -308,6 +280,7 @@
         document.getElementById('user-streak').innerText = data.streak;
         loadHabits(currentUser.id);
         loadHousehold(currentUser.id);
+        loadGlobalLeaderboard();
       }
     }
 
@@ -334,6 +307,7 @@
         }
 
         loadHousehold(session.user.id);
+        loadGlobalLeaderboard();
         loadHabits(session.user.id);
       }
     }
