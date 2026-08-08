@@ -161,11 +161,12 @@
             <th>Inbjudningskod</th>
             <th>Medlemmar</th>
             <th>Total Hem-XP</th>
+            <th>Totala Coins</th>
             <th>Skapat Datum</th>
           </tr>
         </thead>
         <tbody id="household-table-body">
-          <tr><td colspan="5">Laddar hushåll...</td></tr>
+          <tr><td colspan="6">Laddar hushåll...</td></tr>
         </tbody>
       </table>
 
@@ -379,20 +380,21 @@
     async function loadCrmData() {
       const { data: profiles } = await db.from('profiles').select('*');
       const { data: households } = await db.from('households').select('*');
-      const { data: members } = await db.from('household_members').select('household_id, user_id, profiles(xp)');
+      const { data: members } = await db.from('household_members').select('household_id, user_id, profiles(xp, coins)');
       const { data: logs } = await db.from('habit_logs').select('user_id');
 
-      // 1. Fyll i Hushållstabellen
+      // 1. Fyll i Hushållstabellen med både total XP och totala Coins
       const houseTbody = document.getElementById('household-table-body');
       houseTbody.innerHTML = '';
 
       if (!households || households.length === 0) {
-        houseTbody.innerHTML = '<tr><td colspan="5">Inga registrerade hushåll ännu.</td></tr>';
+        houseTbody.innerHTML = '<tr><td colspan="6">Inga registrerade hushåll ännu.</td></tr>';
       } else {
         households.forEach(h => {
           const houseMembers = members ? members.filter(m => m.household_id === h.id) : [];
           const memberCount = houseMembers.length;
           const totalXp = houseMembers.reduce((sum, m) => sum + (m.profiles?.xp || 0), 0);
+          const totalCoins = houseMembers.reduce((sum, m) => sum + (m.profiles?.coins || 0), 0);
           const dateStr = new Date(h.created_at).toLocaleDateString('sv-SE');
 
           const tr = document.createElement('tr');
@@ -401,6 +403,7 @@
             <td><span class="badge badge-house">${h.invite_code}</span></td>
             <td>${memberCount} st medlem(mar)</td>
             <td>✨ ${totalXp} XP</td>
+            <td>💰 ${totalCoins} Coins</td>
             <td>${dateStr}</td>
           `;
           houseTbody.appendChild(tr);
