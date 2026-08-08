@@ -13,6 +13,7 @@
     .profile-info { display: none; }
     .stats-bar { display: flex; justify-content: space-around; background: #2a2a2a; padding: 12px; border-radius: 8px; margin-top: 1rem; font-weight: bold; font-size: 14px; }
     .habit-list { text-align: left; margin-top: 1.5rem; }
+    .section-title { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-top: 1rem; margin-bottom: 0.5rem; }
     .habit-item { background: #2a2a2a; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
     .complete-btn { background-color: #2e7d32; font-size: 13px; padding: 6px 12px; }
     .complete-btn:hover { background-color: #1b5e20; }
@@ -39,7 +40,7 @@
       </div>
 
       <div class="habit-list">
-        <h3>Dagens Utmaningar</h3>
+        <h3>Säsongens Utmaningar</h3>
         <div id="habits-container">Laddar utmaningar...</div>
       </div>
 
@@ -73,7 +74,6 @@
     async function loadHabits(userId) {
       const { data: habits } = await db.from('habits').select('*').eq('user_id', userId);
       
-      // Hämta loggar gjorda idag
       const todayStart = new Date();
       todayStart.setHours(0,0,0,0);
 
@@ -83,7 +83,6 @@
         .gte('completed_at', todayStart.toISOString());
 
       const completedHabitIds = new Set(todayLogs ? todayLogs.map(l => l.habit_id) : []);
-
       const container = document.getElementById('habits-container');
       
       if (!habits || habits.length === 0) {
@@ -92,18 +91,32 @@
       }
 
       container.innerHTML = '';
-      habits.forEach(habit => {
-        const isDoneToday = completedHabitIds.has(habit.id);
-        const div = document.createElement('div');
-        div.className = 'habit-item';
-        div.innerHTML = `
-          <span>${habit.title} (+${habit.xp_reward} XP / +${habit.coin_reward} 💰)</span>
-          ${isDoneToday 
-            ? `<button class="complete-btn disabled-btn" disabled>Klar för idag! ✅</button>`
-            : `<button class="complete-btn" onclick="claimRewards('${habit.id}', ${habit.xp_reward}, ${habit.coin_reward})">Klar!</button>`
-          }
-        `;
-        container.appendChild(div);
+
+      const categories = ['daily', 'weekly', 'monthly'];
+      const labels = { daily: '📅 Daily Tasks', weekly: '⚔️ Weekly Bosses', monthly: '👑 Monthly Final Boss' };
+
+      categories.forEach(cat => {
+        const catHabits = habits.filter(h => (h.quest_type || 'daily') === cat);
+        if (catHabits.length > 0) {
+          const catTitle = document.createElement('div');
+          catTitle.className = 'section-title';
+          catTitle.innerText = labels[cat];
+          container.appendChild(catTitle);
+
+          catHabits.forEach(habit => {
+            const isDoneToday = completedHabitIds.has(habit.id);
+            const div = document.createElement('div');
+            div.className = 'habit-item';
+            div.innerHTML = `
+              <span>${habit.title} (+${habit.xp_reward} XP / +${habit.coin_reward} 💰)</span>
+              ${isDoneToday 
+                ? `<button class="complete-btn disabled-btn" disabled>Klaridag! ✅</button>`
+                : `<button class="complete-btn" onclick="claimRewards('${habit.id}', ${habit.xp_reward}, ${habit.coin_reward})">Klar!</button>`
+              }
+            `;
+            container.appendChild(div);
+          });
+        }
       });
     }
 
