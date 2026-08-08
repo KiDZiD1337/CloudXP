@@ -35,29 +35,15 @@
       display: none;
       box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
-    .search-result-item {
-      padding: 10px 14px;
-      cursor: pointer;
-      font-size: 13px;
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 1px solid #333;
-    }
+    .search-result-item { padding: 10px 14px; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; border-bottom: 1px solid #333; }
     .search-result-item:hover { background: #333; }
-    .target-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: #4a148c;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: bold;
-      width: fit-content;
-      margin-top: 4px;
-    }
+    .target-chip { display: inline-flex; align-items: center; gap: 8px; background: #4a148c; color: white; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; width: fit-content; margin-top: 4px; }
     .target-chip span { cursor: pointer; font-size: 14px; color: #ff8a80; }
+
+    /* Nod-Karterare */
+    .map-mapper-container { position: relative; display: inline-block; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid #444; margin-top: 1rem; cursor: crosshair; }
+    .map-mapper-container img { width: 100%; display: block; }
+    .node-pin { position: absolute; width: 22px; height: 22px; background: #ff9800; color: black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid white; transform: translate(-50%, -50%); pointer-events: none; box-shadow: 0 2px 6px rgba(0,0,0,0.8); }
 
     .action-btn { background-color: #2e7d32; font-size: 12px; padding: 6px 10px; border-radius: 4px; }
     .action-btn:hover { background-color: #1b5e20; }
@@ -87,6 +73,41 @@
 
     <div id="admin-content" style="display: none;">
       
+      <!-- Nod-Karterare för Månadens Karta -->
+      <div class="admin-card">
+        <h2>🗺️ Hantera Månadens Karta & Noder</h2>
+        <div class="form-row">
+          <div class="form-group" style="flex: 1;">
+            <label>Månadsnyckel (ÅÅÅÅ-MM):</label>
+            <input type="text" id="map-month-key" value="2026-08" required>
+          </div>
+          <div class="form-group" style="flex: 3;">
+            <label>Bild-URL från Supabase Storage:</label>
+            <input type="text" id="map-image-url" placeholder="Klistra in länk från 'maps' bucketen..." required>
+          </div>
+          <div class="form-group" style="flex: 1; justify-content: flex-end;">
+            <button type="button" onclick="loadMapForMapping()" style="background:#1565c0;">Ladda Karta 🖼️</button>
+          </div>
+        </div>
+
+        <div id="mapping-area" style="display: none; margin-top: 1rem;">
+          <p style="font-size: 13px; color: #aaa; margin-bottom: 8px;">
+            Klicka på de gula cirklarna i ordning (från start till mål) för att placera noderna 1, 2, 3...
+          </p>
+          
+          <div class="map-mapper-container" id="map-container" onclick="handleMapClick(event)">
+            <img id="map-preview" src="" alt="Månadens karta">
+            <div id="nodes-overlay"></div>
+          </div>
+
+          <div style="margin-top: 1rem; display: flex; gap: 10px;">
+            <button type="button" onclick="undoLastNode()" style="background:#c62828;">Ångra Sista Nod ↩️</button>
+            <button type="button" onclick="clearAllNodes()" style="background:#d32f2f;">Rensa Alla 🗑️</button>
+            <button type="button" onclick="saveActiveMap()" style="background:#2e7d32; margin-left: auto;">Spara Karta & Noder 💾</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Publicera Quests -->
       <div class="admin-card" id="quest-form-card">
         <h2>📢 Skapa & Publicera Utmaning</h2>
@@ -196,6 +217,7 @@
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let searchDebounce = null;
+    let mapNodes = [];
 
     async function initAdmin() {
       const { data: { session } } = await db.auth.getSession();
@@ -220,6 +242,87 @@
       loadCrmData();
       loadQuestPool();
       setupContextualSearch();
+      loadExistingMapConfig();
+    }
+
+    // Kart-karteringslogik
+    async function loadExistingMapConfig() {
+      const monthKey = document.getElementById('map-month-key').value;
+      const { data: map } = await db.from('active_map').select('*').eq('month_key', monthKey).single();
+
+      if (map) {
+        document.getElementById('map-image-url').value = map.image_url;
+        mapNodes = map.nodes_json || [];
+        loadMapForMapping();
+      }
+    }
+
+    function loadMapForMapping() {
+      const url = document.getElementById('map-image-url').value.trim();
+      if (!url) return alert('Ange en giltig bild-URL!');
+
+      const img = document.getElementById('map-preview');
+      img.src = url;
+      img.onload = () => {
+        document.getElementById('mapping-area').style.display = 'block';
+        renderNodesOverlay();
+      };
+      img.onerror = () => alert('Kunde inte ladda bilden. Kontrollera URL:en!');
+    }
+
+    function handleMapClick(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const xPercent = parseFloat((((e.clientX - rect.left) / rect.width) * 100).toFixed(2));
+      const yPercent = parseFloat((((e.clientY - rect.top) / rect.height) * 100).toFixed(2));
+
+      const newNode = { node: mapNodes.length + 1, x: xPercent, y: yPercent };
+      mapNodes.push(newNode);
+      renderNodesOverlay();
+    }
+
+    function renderNodesOverlay() {
+      const overlay = document.getElementById('nodes-overlay');
+      overlay.innerHTML = '';
+
+      mapNodes.forEach(n => {
+        const pin = document.createElement('div');
+        pin.className = 'node-pin';
+        pin.style.left = `${n.x}%`;
+        pin.style.top = `${n.y}%`;
+        pin.innerText = n.node;
+        overlay.appendChild(pin);
+      });
+    }
+
+    function undoLastNode() {
+      mapNodes.pop();
+      renderNodesOverlay();
+    }
+
+    function clearAllNodes() {
+      mapNodes = [];
+      renderNodesOverlay();
+    }
+
+    async function saveActiveMap() {
+      const monthKey = document.getElementById('map-month-key').value.trim();
+      const imageUrl = document.getElementById('map-image-url').value.trim();
+
+      if (!monthKey || !imageUrl) return alert('Fyll i både månadsnyckel och bild-URL!');
+      if (mapNodes.length === 0) return alert('Klicka ut minst en nod på kartan först!');
+
+      const { error } = await db.from('active_map').upsert({
+        month_key: monthKey,
+        image_url: imageUrl,
+        nodes_json: mapNodes,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'month_key' });
+
+      if (error) {
+        alert('Fel vid sparning: ' + error.message);
+      } else {
+        alert(`Kartan för ${monthKey} har sparats med ${mapNodes.length} noder! 🎉`);
+      }
     }
 
     function setupContextualSearch() {
@@ -383,7 +486,6 @@
       const { data: members } = await db.from('household_members').select('household_id, user_id');
       const { data: logs } = await db.from('habit_logs').select('user_id');
 
-      // 1. Fyll i Hushållstabellen med både total XP och totala Coins
       const houseTbody = document.getElementById('household-table-body');
       houseTbody.innerHTML = '';
 
@@ -420,7 +522,6 @@
         });
       }
 
-      // 2. Fyll i Användartabellen
       const userTbody = document.getElementById('user-table-body');
       userTbody.innerHTML = '';
 
