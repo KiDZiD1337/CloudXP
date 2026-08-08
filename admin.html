@@ -20,6 +20,9 @@
     button { background-color: #7b1fa2; color: white; border: none; padding: 10px 18px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; }
     button:hover { background-color: #6a1b9a; }
 
+    .action-btn { background-color: #2e7d32; font-size: 12px; padding: 6px 10px; border-radius: 4px; }
+    .action-btn:hover { background-color: #1b5e20; }
+
     table { width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 8px; overflow: hidden; margin-bottom: 2rem; }
     th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #2a2a2a; }
     th { background: #2a2a2a; font-weight: 600; color: #aaa; }
@@ -45,7 +48,7 @@
     <div id="admin-content" style="display: none;">
       
       <!-- Publicera Quests -->
-      <div class="admin-card">
+      <div class="admin-card" id="quest-form-card">
         <h2>📢 Skapa & Publicera Global Utmaning</h2>
         <form id="publish-quest-form">
           <div class="form-group">
@@ -84,10 +87,11 @@
             <th>XP</th>
             <th>Coins</th>
             <th>Skapad</th>
+            <th>Åtgärd</th>
           </tr>
         </thead>
         <tbody id="pool-table-body">
-          <tr><td colspan="5">Laddar quest pool...</td></tr>
+          <tr><td colspan="6">Laddar quest pool...</td></tr>
         </tbody>
       </table>
 
@@ -164,25 +168,42 @@
       }
     });
 
+    function reuseQuest(title, type, xp, coins) {
+      document.getElementById('quest-title').value = title;
+      document.getElementById('quest-type').value = type;
+      document.getElementById('quest-xp').value = xp;
+      document.getElementById('quest-coins').value = coins;
+
+      // Scrolla upp till formuläret mjukt
+      document.getElementById('quest-form-card').scrollIntoView({ behavior: 'smooth' });
+    }
+
     async function loadQuestPool() {
       const { data: quests } = await db.from('quest_pool').select('*').order('created_at', { ascending: false });
       const tbody = document.getElementById('pool-table-body');
       tbody.innerHTML = '';
 
       if (!quests || quests.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5">Inga uppdrag i poolen ännu.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6">Inga uppdrag i poolen ännu.</td></tr>';
         return;
       }
 
       quests.forEach(q => {
         const tr = document.createElement('tr');
         const dateStr = new Date(q.created_at).toLocaleDateString('sv-SE');
+        
+        // Escape strängar för att undvika problem med citationstecken i titeln
+        const safeTitle = q.title.replace(/'/g, "\\'");
+
         tr.innerHTML = `
           <td><strong>${q.title}</strong></td>
           <td><span class="badge badge-type">${q.quest_type}</span></td>
           <td>+${q.xp_reward} XP</td>
           <td>💰 ${q.coin_reward}</td>
           <td>${dateStr}</td>
+          <td>
+            <button class="action-btn" onclick="reuseQuest('${safeTitle}', '${q.quest_type}', ${q.xp_reward}, ${q.coin_reward})">📋 Kopiera</button>
+          </td>
         `;
         tbody.appendChild(tr);
       });
