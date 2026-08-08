@@ -12,11 +12,11 @@
     /* Login-vy */
     .login-container { text-align: center; background: #1e1e1e; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); max-width: 400px; width: 90%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; }
 
-    /* Kartbox (Interaktiv Pan & Zoom Viewport) */
-    .map-viewport { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; overflow: hidden; background: #0a0a0a; cursor: grab; }
+    /* Kartbox (Fullskärm Viewport) */
+    .map-viewport { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; overflow: hidden; background: #121212; cursor: grab; }
     .map-viewport:active { cursor: grabbing; }
 
-    .map-container { position: absolute; top: 0; left: 0; transform-origin: 0 0; transition: transform 0.05s ease-out; }
+    .map-container { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
     .map-image { display: block; max-width: none; user-select: none; pointer-events: none; }
 
     /* Zoom Knappar på Kartan */
@@ -94,7 +94,7 @@
     <button id="login-btn" class="primary-btn">Logga in med Google</button>
   </div>
 
-  <!-- Kartyta med Interaktiv Pan & Zoom -->
+  <!-- Kartyta med begränsad Pan & Zoom -->
   <div id="map-viewport" class="map-viewport" style="display: none;">
     <div class="map-container" id="map-container">
       <img id="active-map-img" class="map-image" src="" alt="Månadens Karta">
@@ -170,7 +170,8 @@
     let currentMapNodes = [];
 
     // Zoom & Pan variabler
-    let scale = 0.8;
+    let scale = 1;
+    let minScale = 1;
     let panX = 0;
     let panY = 0;
     let isDragging = false;
@@ -189,10 +190,8 @@
       window.location.reload();
     });
 
-    // Pan & Zoom Logik
     function initMapPanZoom() {
       const viewport = document.getElementById('map-viewport');
-      const container = document.getElementById('map-container');
 
       viewport.addEventListener('mousedown', (e) => {
         if (e.target.closest('.card') || e.target.closest('.map-controls')) return;
@@ -205,7 +204,7 @@
         if (!isDragging) return;
         panX = e.clientX - startX;
         panY = e.clientY - startY;
-        applyTransform();
+        clampPanAndApply();
       });
 
       window.addEventListener('mouseup', () => { isDragging = false; });
@@ -215,21 +214,59 @@
         const delta = e.deltaY < 0 ? 0.08 : -0.08;
         zoomMap(delta);
       }, { passive: false });
+
+      window.addEventListener('resize', () => {
+        calculateMinScale();
+        clampPanAndApply();
+      });
+    }
+
+    function calculateMinScale() {
+      const img = document.getElementById('active-map-img');
+      if (!img.naturalWidth || !img.naturalHeight) return;
+
+      const scaleX = window.innerWidth / img.naturalWidth;
+      const scaleY = window.innerHeight / img.naturalHeight;
+      
+      // Minsta zoom krävs för att täcka skärmen helt (Cover)
+      minScale = Math.max(scaleX, scaleY);
+      if (scale < minScale) {
+        scale = minScale;
+      }
     }
 
     function zoomMap(amount) {
-      scale = Math.min(Math.max(0.4, scale + amount), 2.5);
-      applyTransform();
+      calculateMinScale();
+      scale = Math.min(Math.max(minScale, scale + amount), 3.0);
+      clampPanAndApply();
     }
 
     function resetMapView() {
-      scale = 0.8;
-      panX = (window.innerWidth - 1200 * scale) / 2;
-      panY = (window.innerHeight - 800 * scale) / 2;
-      applyTransform();
+      calculateMinScale();
+      scale = minScale;
+      const img = document.getElementById('active-map-img');
+      const mapWidth = img.naturalWidth * scale;
+      const mapHeight = img.naturalHeight * scale;
+
+      panX = (window.innerWidth - mapWidth) / 2;
+      panY = (window.innerHeight - mapHeight) / 2;
+      clampPanAndApply();
     }
 
-    function applyTransform() {
+    function clampPanAndApply() {
+      const img = document.getElementById('active-map-img');
+      if (!img.naturalWidth || !img.naturalHeight) return;
+
+      const mapWidth = img.naturalWidth * scale;
+      const mapHeight = img.naturalHeight * scale;
+
+      // Förhindra svarta hål runt kanterna
+      const minPanX = window.innerWidth - mapWidth;
+      const minPanY = window.innerHeight - mapHeight;
+
+      panX = Math.min(0, Math.max(minPanX, panX));
+      panY = Math.min(0, Math.max(minPanY, panY));
+
       const container = document.getElementById('map-container');
       container.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
     }
