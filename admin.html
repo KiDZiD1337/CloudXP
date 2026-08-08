@@ -132,20 +132,16 @@
             <!-- Fält för Låst Port / Item -->
             <div id="gate-fields" class="form-row" style="display: none;">
               <div class="form-group" style="flex: 1;">
-                <label>Kräver Föremål i Inventariet (Item Name):</label>
-                <input type="text" id="editor-required-item" placeholder="t.ex. Gammal Nyckel">
+                <label>Välj Föremål ur Item Poolen:</label>
+                <select id="editor-required-item-select"></select>
               </div>
             </div>
 
             <!-- Fält för Shop -->
             <div id="shop-fields" class="form-row" style="display: none;">
-              <div class="form-group" style="flex: 2;">
-                <label>Pryl att sälja i butiken:</label>
-                <input type="text" id="editor-shop-item-name" placeholder="t.ex. Snabbhetsskor / Magisk Dryck">
-              </div>
               <div class="form-group" style="flex: 1;">
-                <label>Pris (Coins):</label>
-                <input type="number" id="editor-shop-item-cost" value="100">
+                <label>Välj Pryl att sälja i Shopen:</label>
+                <select id="editor-shop-item-select"></select>
               </div>
             </div>
 
@@ -158,6 +154,55 @@
             <button type="button" onclick="saveActiveMap()" style="background:#2e7d32; margin-left: auto;">Spara Karta & Noder 💾</button>
           </div>
         </div>
+      </div>
+
+      <!-- Skapa & Hantera Item Pool -->
+      <div class="admin-card">
+        <h2>🎒 Central Item Pool (Katalog för Prylar, Gear & Nycklar)</h2>
+        <form id="create-item-form">
+          <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+              <label>Ikon (Emoji):</label>
+              <input type="text" id="item-icon" value="🔑" required>
+            </div>
+            <div class="form-group" style="flex: 2;">
+              <label>Prylens Namn:</label>
+              <input type="text" id="item-name" placeholder="t.ex. Gammal Nyckel" required>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label>Typ:</label>
+              <select id="item-type">
+                <option value="key">Nyckel / Access</option>
+                <option value="gear">Gear / Kosmetiskt</option>
+                <option value="consumable">Engångsartikel</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label>Standardpris (Coins):</label>
+              <input type="number" id="item-cost" value="50" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Beskrivning:</label>
+            <input type="text" id="item-desc" placeholder="t.ex. Låser upp vägen till den hemliga byn.">
+          </div>
+          <button type="submit" style="background-color: #e65100;">Skapa Pryl i Katalogen 🎁</button>
+        </form>
+
+        <h3 style="margin-top: 1.5rem; font-size: 15px; color: #ff9800;">Sparade Prylar:</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Pryl</th>
+              <th>Typ</th>
+              <th>Pris</th>
+              <th>Beskrivning</th>
+            </tr>
+          </thead>
+          <tbody id="item-pool-table-body">
+            <tr><td colspan="4">Laddar item pool...</td></tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- Publicera Quests -->
@@ -204,7 +249,9 @@
             </div>
             <div class="form-group" style="flex: 1;">
               <label>Föremålsbelöning (Valfri):</label>
-              <input type="text" id="quest-item-reward" placeholder="t.ex. Gammal Nyckel">
+              <select id="quest-item-select">
+                <option value="">-- Ingen Pryl --</option>
+              </select>
             </div>
           </div>
           <button type="submit">Spara & Publicera Utmaning 🚀</button>
@@ -276,6 +323,7 @@
     let searchDebounce = null;
     let mapNodes = [];
     let selectedNodeIndex = null;
+    let cachedItems = [];
 
     async function initAdmin() {
       const { data: { session } } = await db.auth.getSession();
@@ -297,11 +345,73 @@
       }
 
       document.getElementById('admin-content').style.display = 'block';
+      await loadItemPool();
       loadCrmData();
       loadQuestPool();
       setupContextualSearch();
       loadExistingMapConfig();
     }
+
+    async function loadItemPool() {
+      const { data: items } = await db.from('item_pool').select('*').order('name', { ascending: true });
+      cachedItems = items || [];
+
+      const tbody = document.getElementById('item-pool-table-body');
+      tbody.innerHTML = '';
+
+      const gateSelect = document.getElementById('editor-required-item-select');
+      const shopSelect = document.getElementById('editor-shop-item-select');
+      const questSelect = document.getElementById('quest-item-select');
+
+      gateSelect.innerHTML = '<option value="">-- Välj Nyckel/Pryl --</option>';
+      shopSelect.innerHTML = '<option value="">-- Välj Pryl --</option>';
+      questSelect.innerHTML = '<option value="">-- Ingen Pryl --</option>';
+
+      if (cachedItems.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4">Inga prylar i katalogen ännu.</td></tr>';
+        return;
+      }
+
+      cachedItems.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${item.icon} ${item.name}</strong></td>
+          <td><span class="badge badge-type">${item.item_type}</span></td>
+          <td>💰 ${item.cost}</td>
+          <td style="color:#aaa; font-size:13px;">${item.description || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+
+        const opt1 = `<option value="${item.name}">${item.icon} ${item.name} (${item.cost} Coins)</option>`;
+        const opt2 = `<option value="${item.name}">${item.icon} ${item.name}</option>`;
+        
+        gateSelect.innerHTML += opt2;
+        shopSelect.innerHTML += opt1;
+        questSelect.innerHTML += opt2;
+      });
+    }
+
+    document.getElementById('create-item-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const icon = document.getElementById('item-icon').value.trim();
+      const name = document.getElementById('item-name').value.trim();
+      const type = document.getElementById('item-type').value;
+      const cost = parseInt(document.getElementById('item-cost').value);
+      const desc = document.getElementById('item-desc').value.trim();
+
+      const { error } = await db.from('item_pool').insert({
+        icon, name, item_type: type, cost, description: desc
+      });
+
+      if (error) {
+        alert('Kunde inte skapa pryl: ' + error.message);
+      } else {
+        alert(`Prylen "${name}" skapad!`);
+        document.getElementById('item-name').value = '';
+        document.getElementById('item-desc').value = '';
+        loadItemPool();
+      }
+    });
 
     async function loadExistingMapConfig() {
       const monthKey = document.getElementById('map-month-key').value;
@@ -362,9 +472,8 @@
       document.getElementById('editor-next-nodes').value = (n.next_nodes || []).join(',');
       document.getElementById('editor-required-xp').value = n.required_xp || (n.node * 50);
 
-      document.getElementById('editor-required-item').value = n.required_item || '';
-      document.getElementById('editor-shop-item-name').value = n.shop_item_name || '';
-      document.getElementById('editor-shop-item-cost').value = n.shop_item_cost || 100;
+      document.getElementById('editor-required-item-select').value = n.required_item || '';
+      document.getElementById('editor-shop-item-select').value = n.shop_item_name || '';
 
       updateEditorFields();
       document.getElementById('node-editor-card').style.display = 'block';
@@ -390,10 +499,13 @@
       mapNodes[selectedNodeIndex].required_xp = reqXp;
 
       if (type === 'gate') {
-        mapNodes[selectedNodeIndex].required_item = document.getElementById('editor-required-item').value.trim();
+        mapNodes[selectedNodeIndex].required_item = document.getElementById('editor-required-item-select').value;
       } else if (type === 'shop') {
-        mapNodes[selectedNodeIndex].shop_item_name = document.getElementById('editor-shop-item-name').value.trim();
-        mapNodes[selectedNodeIndex].shop_item_cost = parseInt(document.getElementById('editor-shop-item-cost').value);
+        const selectedItemName = document.getElementById('editor-shop-item-select').value;
+        const itemData = cachedItems.find(i => i.name === selectedItemName);
+
+        mapNodes[selectedNodeIndex].shop_item_name = selectedItemName;
+        mapNodes[selectedNodeIndex].shop_item_cost = itemData ? itemData.cost : 100;
       }
 
       renderNodesOverlay();
@@ -539,7 +651,7 @@
       const type = document.getElementById('quest-type').value;
       const xp = parseInt(document.getElementById('quest-xp').value);
       const coins = parseInt(document.getElementById('quest-coins').value);
-      const itemReward = document.getElementById('quest-item-reward').value.trim();
+      const itemReward = document.getElementById('quest-item-select').value;
       
       const targetType = document.getElementById('selected-target-type').value;
       const targetId = document.getElementById('selected-target-id').value;
@@ -563,7 +675,6 @@
       } else {
         alert(`Utmaningen "${title}" har publicerats!`);
         document.getElementById('quest-title').value = '';
-        document.getElementById('quest-item-reward').value = '';
         resetTargetSelection();
         loadQuestPool();
       }
@@ -574,7 +685,7 @@
       document.getElementById('quest-type').value = type;
       document.getElementById('quest-xp').value = xp;
       document.getElementById('quest-coins').value = coins;
-      document.getElementById('quest-item-reward').value = item || '';
+      document.getElementById('quest-item-select').value = item || '';
       document.getElementById('quest-form-card').scrollIntoView({ behavior: 'smooth' });
     }
 
