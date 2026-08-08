@@ -7,14 +7,16 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 1rem; }
-    .card { background: #1e1e1e; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); text-align: center; max-width: 450px; width: 100%; }
-    button { background-color: #4285F4; color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
+    .card { background: #1e1e1e; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); text-align: center; max-width: 450px; width: 100%; box-sizing: border-box; }
+    button { background-color: #4285F4; color: white; border: none; padding: 10px 18px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
     button:hover { background-color: #357ae8; }
     .profile-info { display: none; }
     .habit-list { text-align: left; margin-top: 1.5rem; }
     .habit-item { background: #2a2a2a; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-    .complete-btn { background-color: #2e7d32; font-size: 14px; padding: 6px 12px; margin-top: 0; }
+    .complete-btn { background-color: #2e7d32; font-size: 14px; padding: 6px 12px; }
     .complete-btn:hover { background-color: #1b5e20; }
+    .add-habit-form { display: flex; gap: 8px; margin-top: 1rem; }
+    .add-habit-form input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: white; }
   </style>
 </head>
 <body>
@@ -27,6 +29,11 @@
     <div id="profile" class="profile-info">
       <h2 id="user-name">Välkommen!</h2>
       <p>XP: <span id="user-xp">0</span> | Level: <span id="user-level">1</span></p>
+
+      <form id="add-habit-form" class="add-habit-form">
+        <input type="text" id="habit-title" placeholder="Ny vana..." required>
+        <button type="submit" style="background-color: #388e3c;">+ Lägg till</button>
+      </form>
       
       <div class="habit-list">
         <h3>Mina Vanor</h3>
@@ -58,12 +65,24 @@
       window.location.reload();
     });
 
+    document.getElementById('add-habit-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('habit-title');
+      const title = input.value.trim();
+      
+      if (title && currentUser) {
+        await db.from('habits').insert({ user_id: currentUser.id, title: title, xp_reward: 10 });
+        input.value = '';
+        loadHabits(currentUser.id);
+      }
+    });
+
     async function loadHabits(userId) {
       const { data: habits } = await db.from('habits').select('*').eq('user_id', userId);
       const container = document.getElementById('habits-container');
       
       if (!habits || habits.length === 0) {
-        container.innerHTML = '<p>Inga vanor hittades.</p>';
+        container.innerHTML = '<p>Inga vanor tillagda ännu.</p>';
         return;
       }
 
@@ -73,20 +92,24 @@
         div.className = 'habit-item';
         div.innerHTML = `
           <span>${habit.title} (+${habit.xp_reward} XP)</span>
-          <button class="complete-btn" onclick="claimXp(${habit.xp_reward})">Klar!</button>
+          <button class="complete-btn" onclick="claimXp('${habit.id}', ${habit.xp_reward})">Klar!</button>
         `;
         container.appendChild(div);
       });
     }
 
-    async function claimXp(amount) {
+    async function claimXp(habitId, amount) {
       currentXp += amount;
       const newLevel = Math.floor(currentXp / 100) + 1;
 
       document.getElementById('user-xp').innerText = currentXp;
       document.getElementById('user-level').innerText = newLevel;
 
+      // Uppdatera profilens XP/Level
       await db.from('profiles').update({ xp: currentXp, level: newLevel }).eq('id', currentUser.id);
+
+      // Logga utförandet i historiktabellen
+      await db.from('habit_logs').insert({ user_id: currentUser.id, habit_id: habitId });
     }
 
     async function checkUser() {
