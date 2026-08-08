@@ -19,13 +19,28 @@
     .map-container { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
     .map-image { display: block; max-width: none; user-select: none; pointer-events: none; }
 
+    /* Klickbara Noder på Kartan */
+    .map-node-interactive { position: absolute; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: black; border: 2px solid #ffffff; transform: translate(-50%, -50%); cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.8); z-index: 4; transition: transform 0.2s, box-shadow 0.2s; }
+    .map-node-interactive:hover { transform: translate(-50%, -50%) scale(1.25); z-index: 10; }
+    
+    .map-node-interactive.type-standard { background: #ffeb3b; }
+    .map-node-interactive.type-branch { background: #2196f3; color: white; }
+    .map-node-interactive.type-shop { background: #4caf50; color: white; }
+    .map-node-interactive.type-gate { background: #f44336; color: white; }
+    .map-node-interactive.is-current { animation: pulse 1.5s infinite alternate; }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.8); }
+      100% { box-shadow: 0 0 0 12px rgba(255, 152, 0, 0); }
+    }
+
     /* Zoom Knappar på Kartan */
     .map-controls { position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; gap: 8px; background: rgba(30,30,30,0.85); padding: 6px 12px; border-radius: 20px; backdrop-filter: blur(4px); border: 1px solid #444; }
     .map-controls button { background: #333; color: white; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
     .map-controls button:hover { background: #444; }
 
     /* Cloudie Marker */
-    .cloudie-marker { position: absolute; width: 36px; height: 36px; background: #ff9800; border: 3px solid #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; transform: translate(-50%, -100%); box-shadow: 0 4px 10px rgba(0,0,0,0.8); z-index: 5; animation: bounce 1.5s infinite alternate; pointer-events: none; }
+    .cloudie-marker { position: absolute; width: 36px; height: 36px; background: #ff9800; border: 3px solid #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; transform: translate(-50%, -100%); box-shadow: 0 4px 10px rgba(0,0,0,0.8); z-index: 6; animation: bounce 1.5s infinite alternate; pointer-events: none; }
     .cloudie-name { position: absolute; top: -20px; background: rgba(0,0,0,0.8); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; white-space: nowrap; }
 
     @keyframes bounce {
@@ -43,6 +58,13 @@
     /* NEDRE HÖGER: Leaderboard */
     .leaderboard-widget { position: absolute; bottom: 1rem; right: 1rem; width: 320px; max-height: 480px; overflow-y: auto; }
 
+    /* Dialogruta / Modal för Nodhändelser */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; }
+    .modal-card { background: #1e1e1e; padding: 1.8rem; border-radius: 12px; border: 1px solid #444; max-width: 420px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.8); text-align: center; }
+    .modal-card h3 { margin-top: 0; color: #ff9800; font-size: 20px; }
+    .modal-card p { font-size: 14px; color: #ccc; margin-bottom: 1.5rem; }
+    .modal-actions { display: flex; gap: 10px; justify-content: center; }
+
     @media (max-width: 820px) {
       body { overflow-y: auto; }
       .map-viewport { position: relative; height: 400px; }
@@ -59,6 +81,9 @@
     .xp-text { font-size: 11px; color: #aaa; margin-bottom: 4px; display: flex; justify-content: space-between; }
     .xp-bar-bg { background: #2a2a2a; height: 8px; border-radius: 4px; overflow: hidden; width: 100%; }
     .xp-bar-fill { background: linear-gradient(90deg, #ff9800, #ffeb3b); height: 100%; width: 0%; transition: width 0.4s ease; }
+
+    .inventory-box { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; font-size: 11px; }
+    .inventory-item { background: #4a148c; color: white; padding: 4px 8px; border-radius: 12px; font-weight: bold; }
 
     .leaderboard-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 6px; margin-bottom: 8px; }
     .leaderboard-header h3 { margin: 0; font-size: 15px; color: #ff9800; }
@@ -98,6 +123,7 @@
   <div id="map-viewport" class="map-viewport" style="display: none;">
     <div class="map-container" id="map-container">
       <img id="active-map-img" class="map-image" src="" alt="Månadens Karta">
+      <div id="nodes-layer"></div>
       <div id="cloudie-overlay"></div>
     </div>
     
@@ -109,12 +135,21 @@
     </div>
   </div>
 
+  <!-- Dialogruta för Nodhändelser -->
+  <div id="node-modal" class="modal-overlay">
+    <div class="modal-card">
+      <h3 id="modal-title">Nod 1</h3>
+      <p id="modal-desc">Beskrivning...</p>
+      <div id="modal-actions" class="modal-actions"></div>
+    </div>
+  </div>
+
   <!-- Flytande Moduler -->
   <div id="dashboard" class="viewport-overlay">
     
     <!-- Profil & Quests -->
     <div class="card profile-widget">
-      <h2 id="user-name" style="margin: 0 0 8px 0; font-size: 18px;">Välkommen!</h2>
+      <h2 id="user-name" style="margin: 0 0 4px 0; font-size: 18px;">Välkommen!</h2>
       
       <div class="stats-bar">
         <span>⭐ Lvl <span id="user-level">1</span></span>
@@ -130,6 +165,11 @@
         <div class="xp-bar-bg">
           <div id="xp-fill" class="xp-bar-fill"></div>
         </div>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <span style="font-size: 11px; color: #aaa;">🎒 Ditt Inventarie:</span>
+        <div id="user-inventory" class="inventory-box">Inga prylar ännu.</div>
       </div>
 
       <div class="habit-list">
@@ -166,6 +206,7 @@
 
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
+    let currentUserProfile = null;
     let activeTab = 'house';
     let currentMapNodes = [];
 
@@ -194,7 +235,7 @@
       const viewport = document.getElementById('map-viewport');
 
       viewport.addEventListener('mousedown', (e) => {
-        if (e.target.closest('.card') || e.target.closest('.map-controls')) return;
+        if (e.target.closest('.card') || e.target.closest('.map-controls') || e.target.closest('.modal-card')) return;
         isDragging = true;
         startX = e.clientX - panX;
         startY = e.clientY - panY;
@@ -227,12 +268,8 @@
 
       const scaleX = window.innerWidth / img.naturalWidth;
       const scaleY = window.innerHeight / img.naturalHeight;
-      
-      // Minsta zoom krävs för att täcka skärmen helt (Cover)
       minScale = Math.max(scaleX, scaleY);
-      if (scale < minScale) {
-        scale = minScale;
-      }
+      if (scale < minScale) scale = minScale;
     }
 
     function zoomMap(amount) {
@@ -260,7 +297,6 @@
       const mapWidth = img.naturalWidth * scale;
       const mapHeight = img.naturalHeight * scale;
 
-      // Förhindra svarta hål runt kanterna
       const minPanX = window.innerWidth - mapWidth;
       const minPanY = window.innerHeight - mapHeight;
 
@@ -284,6 +320,15 @@
       document.getElementById('xp-fill').style.width = percentage + '%';
     }
 
+    function renderInventory(inv) {
+      const box = document.getElementById('user-inventory');
+      if (!inv || inv.length === 0) {
+        box.innerHTML = '<span style="color:#888;">Inga prylar ännu.</span>';
+        return;
+      }
+      box.innerHTML = inv.map(i => `<span class="inventory-item">🎁 ${i}</span>`).join('');
+    }
+
     async function loadActiveMapAndPosition(userNode) {
       const monthKey = '2026-08';
       const { data: mapData } = await db.from('active_map').select('*').eq('month_key', monthKey).single();
@@ -294,10 +339,30 @@
         currentMapNodes = mapData.nodes_json || [];
 
         img.onload = () => {
+          renderNodesOnMap();
           renderCloudieOnNode(userNode);
           resetMapView();
         };
       }
+    }
+
+    function renderNodesOnMap() {
+      const layer = document.getElementById('nodes-layer');
+      layer.innerHTML = '';
+
+      currentMapNodes.forEach(n => {
+        const pin = document.createElement('div');
+        const isCurrent = currentUserProfile && currentUserProfile.map_node === n.node;
+        pin.className = `map-node-interactive type-${n.type || 'standard'} ${isCurrent ? 'is-current' : ''}`;
+        pin.style.left = `${n.x}%`;
+        pin.style.top = `${n.y}%`;
+        pin.innerText = n.node;
+        pin.onclick = (e) => {
+          e.stopPropagation();
+          handleNodeClick(n);
+        };
+        layer.appendChild(pin);
+      });
     }
 
     function renderCloudieOnNode(nodeNum) {
@@ -315,6 +380,105 @@
         marker.style.top = `${targetNode.y}%`;
         marker.innerHTML = `<div class="cloudie-name">Du (Nod ${nodeNum})</div>☁️`;
         overlay.appendChild(marker);
+      }
+    }
+
+    function handleNodeClick(node) {
+      const modal = document.getElementById('node-modal');
+      const title = document.getElementById('modal-title');
+      const desc = document.getElementById('modal-desc');
+      const actions = document.getElementById('modal-actions');
+
+      const userNode = currentUserProfile ? currentUserProfile.map_node : 1;
+      const userXp = currentUserProfile ? currentUserProfile.current_month_xp : 0;
+      const inventory = currentUserProfile ? (currentUserProfile.inventory || []) : [];
+
+      title.innerText = `📍 Nod ${node.node} (${node.type ? node.type.toUpperCase() : 'STANDARD'})`;
+      actions.innerHTML = '';
+
+      if (node.type === 'shop') {
+        desc.innerText = `Välkommen till butiken! Här kan du köpa "${node.shop_item_name || 'Okänd pryl'}" för ${node.shop_item_cost || 100} Coins.`;
+        
+        const buyBtn = document.createElement('button');
+        buyBtn.className = 'primary-btn';
+        buyBtn.innerText = `Köp för ${node.shop_item_cost || 100} 💰`;
+        buyBtn.onclick = () => executeBuyItem(node.shop_item_name, node.shop_item_cost);
+        actions.appendChild(buyBtn);
+
+      } else if (node.type === 'branch') {
+        desc.innerText = `Vägskäl! Du kan välja att gå vidare till följande noder: ${(node.next_nodes || []).join(' eller ')}.`;
+        
+        (node.next_nodes || []).forEach(nextId => {
+          const btn = document.createElement('button');
+          btn.className = 'primary-btn';
+          btn.innerText = `Gå till Nod ${nextId} 🔀`;
+          btn.onclick = () => moveToNode(nextId);
+          actions.appendChild(btn);
+        });
+
+      } else if (node.type === 'gate') {
+        const hasItem = inventory.includes(node.required_item);
+        if (hasItem) {
+          desc.innerText = `Porten kräver "${node.required_item}". Du har föremålet och kan låsa upp vägen!`;
+          const unlockBtn = document.createElement('button');
+          unlockBtn.className = 'primary-btn';
+          unlockBtn.innerText = 'Lås upp & Gå vidare 🔑';
+          unlockBtn.onclick = () => moveToNode(node.node);
+          actions.appendChild(unlockBtn);
+        } else {
+          desc.innerText = `🔒 Porten är låst! Du behöver föremålet "${node.required_item}" i ditt inventarie för att passa här.`;
+        }
+
+      } else {
+        const canReach = userXp >= (node.required_xp || 0);
+        desc.innerText = `Kräver ${node.required_xp || 50} Månads-XP. Du har ${userXp} XP.`;
+
+        if (canReach && userNode !== node.node) {
+          const moveBtn = document.createElement('button');
+          moveBtn.className = 'primary-btn';
+          moveBtn.innerText = `Flytta hit 🏃‍♂️`;
+          moveBtn.onclick = () => moveToNode(node.node);
+          actions.appendChild(moveBtn);
+        }
+      }
+
+      const closeBtn = document.createElement('button');
+      closeBtn.style.background = '#444';
+      closeBtn.style.color = '#fff';
+      closeBtn.style.border = 'none';
+      closeBtn.style.padding = '8px 16px';
+      closeBtn.style.borderRadius = '6px';
+      closeBtn.style.cursor = 'pointer';
+      closeBtn.innerText = 'Stäng';
+      closeBtn.onclick = () => { modal.style.display = 'none'; };
+      actions.appendChild(closeBtn);
+
+      modal.style.display = 'flex';
+    }
+
+    async function executeBuyItem(itemName, cost) {
+      const { data, error } = await db.rpc('buy_shop_item', { p_item_name: itemName, p_cost: cost });
+      if (error) {
+        alert('Köp misslyckades: ' + error.message);
+      } else {
+        alert(`Grattis! Du köpte ${itemName}! 🎉`);
+        currentUserProfile.coins = data.coins;
+        currentUserProfile.inventory = data.inventory;
+        document.getElementById('user-coins').innerText = data.coins;
+        renderInventory(data.inventory);
+        document.getElementById('node-modal').style.display = 'none';
+      }
+    }
+
+    async function moveToNode(newNodeId) {
+      const { error } = await db.from('profiles').update({ map_node: newNodeId }).eq('id', currentUser.id);
+      if (error) {
+        alert('Kunde inte flytta: ' + error.message);
+      } else {
+        currentUserProfile.map_node = newNodeId;
+        renderNodesOnMap();
+        renderCloudieOnNode(newNodeId);
+        document.getElementById('node-modal').style.display = 'none';
       }
     }
 
@@ -517,8 +681,17 @@
         updateXpBar(data.xp, data.level);
         document.getElementById('user-coins').innerText = data.coins;
         document.getElementById('user-streak').innerText = data.streak;
+        
+        currentUserProfile.xp = data.xp;
+        currentUserProfile.coins = data.coins;
+        currentUserProfile.level = data.level;
+        currentUserProfile.current_month_xp = data.month_xp;
+        currentUserProfile.inventory = data.inventory;
+
+        renderInventory(data.inventory);
         loadHabits(currentUser.id);
         renderLeaderboard();
+        renderNodesOnMap();
         renderCloudieOnNode(data.map_node || 1);
       }
     }
@@ -534,13 +707,15 @@
 
         initMapPanZoom();
 
-        const { data: profile } = await db.from('profiles').select('full_name, xp, level, coins, streak_count, map_node, role').eq('id', session.user.id).single();
+        const { data: profile } = await db.from('profiles').select('*').eq('id', session.user.id).single();
 
         if (profile) {
+          currentUserProfile = profile;
           document.getElementById('user-name').innerText = 'Hej ' + profile.full_name + '!';
           document.getElementById('user-coins').innerText = profile.coins || 0;
           document.getElementById('user-streak').innerText = profile.streak_count || 0;
           updateXpBar(profile.xp || 0, profile.level || 1);
+          renderInventory(profile.inventory || []);
 
           if (profile.role === 'admin') {
             document.getElementById('admin-link-btn').style.display = 'block';

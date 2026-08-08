@@ -43,7 +43,7 @@
     /* Nod-Karterare */
     .map-mapper-container { position: relative; display: inline-block; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid #444; margin-top: 1rem; cursor: crosshair; }
     .map-mapper-container img { width: 100%; display: block; }
-    .node-pin { position: absolute; width: 24px; height: 24px; background: #ff9800; color: black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid white; transform: translate(-50%, -50%); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.8); z-index: 10; }
+    .node-pin { position: absolute; width: 26px; height: 26px; background: #ff9800; color: black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid white; transform: translate(-50%, -50%); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.8); z-index: 10; }
     .node-pin.type-shop { background: #2e7d32; color: white; }
     .node-pin.type-branch { background: #1565c0; color: white; }
     .node-pin.type-gate { background: #c62828; color: white; }
@@ -81,7 +81,7 @@
       
       <!-- Nod-Karterare för Månadens Karta -->
       <div class="admin-card">
-        <h2>🗺️ Hantera Månadens Karta, Vägskäl & Shops</h2>
+        <h2>🗺️ Hantera Månadens Karta & Events (Shops, Gates & Branch)</h2>
         <div class="form-row">
           <div class="form-group" style="flex: 1;">
             <label>Månadsnyckel (ÅÅÅÅ-MM):</label>
@@ -98,7 +98,7 @@
 
         <div id="mapping-area" style="display: none; margin-top: 1rem;">
           <p style="font-size: 13px; color: #aaa; margin-bottom: 8px;">
-            Klicka på kartan för att placera en ny nod. Klicka på en befintlig nod för att redigera dess regler, vägskäl eller shop.
+            Klicka på kartan för att skapa en nod. Klicka på en befintlig nod-pin för att redigera typ, event, förgreningar och butiksvaror.
           </p>
           
           <div class="map-mapper-container" id="map-container" onclick="handleMapClick(event)">
@@ -108,20 +108,20 @@
 
           <!-- Redigera Vald Nod -->
           <div id="node-editor-card" class="node-editor" style="display: none;">
-            <h3>⚙️ Redigera Nod <span id="editor-node-id">1</span></h3>
+            <h3>⚙️ Konfigurera Nod <span id="editor-node-id">1</span></h3>
             <div class="form-row">
               <div class="form-group" style="flex: 1;">
-                <label>Nodtyp:</label>
+                <label>Nod-typ / Event:</label>
                 <select id="editor-node-type" onchange="updateEditorFields()">
-                  <option value="standard">🟡 Standard (XP-krav)</option>
-                  <option value="branch">🔀 Vägskäl (Grenar ut)</option>
-                  <option value="shop">🛒 Shop (Köp Prylar)</option>
-                  <option value="gate">🔒 Låst Port (Kräver Item)</option>
+                  <option value="standard">🟡 Standard Nod (XP-Milstolpe)</option>
+                  <option value="branch">🔀 Vägskäl (Grenar ut till flera noder)</option>
+                  <option value="shop">🛒 Shop / Butik (Event)</option>
+                  <option value="gate">🔒 Låst Port (Kräver Item / Nyckel)</option>
                 </select>
               </div>
               <div class="form-group" style="flex: 1;">
                 <label>Koppla till Nästa Nod(er):</label>
-                <input type="text" id="editor-next-nodes" placeholder="t.ex. 2 eller vid vägskäl 4,10">
+                <input type="text" id="editor-next-nodes" placeholder="t.ex. 2 eller vid vägskäl 4,12">
               </div>
               <div class="form-group" style="flex: 1;">
                 <label>Mål Månads-XP:</label>
@@ -132,16 +132,16 @@
             <!-- Fält för Låst Port / Item -->
             <div id="gate-fields" class="form-row" style="display: none;">
               <div class="form-group" style="flex: 1;">
-                <label>Kräver Föremål (Item Name):</label>
-                <input type="text" id="editor-required-item" placeholder="t.ex. Old Key">
+                <label>Kräver Föremål i Inventariet (Item Name):</label>
+                <input type="text" id="editor-required-item" placeholder="t.ex. Gammal Nyckel">
               </div>
             </div>
 
             <!-- Fält för Shop -->
             <div id="shop-fields" class="form-row" style="display: none;">
               <div class="form-group" style="flex: 2;">
-                <label>Shop Item (Namn):</label>
-                <input type="text" id="editor-shop-item-name" placeholder="t.ex. Speed Boots">
+                <label>Pryl att sälja i butiken:</label>
+                <input type="text" id="editor-shop-item-name" placeholder="t.ex. Snabbhetsskor / Magisk Dryck">
               </div>
               <div class="form-group" style="flex: 1;">
                 <label>Pris (Coins):</label>
@@ -204,7 +204,7 @@
             </div>
             <div class="form-group" style="flex: 1;">
               <label>Föremålsbelöning (Valfri):</label>
-              <input type="text" id="quest-item-reward" placeholder="t.ex. Old Key">
+              <input type="text" id="quest-item-reward" placeholder="t.ex. Gammal Nyckel">
             </div>
           </div>
           <button type="submit">Spara & Publicera Utmaning 🚀</button>
@@ -303,7 +303,6 @@
       loadExistingMapConfig();
     }
 
-    // Kart-karteringslogik
     async function loadExistingMapConfig() {
       const monthKey = document.getElementById('map-month-key').value;
       const { data: map } = await db.from('active_map').select('*').eq('month_key', monthKey).single();
@@ -361,7 +360,7 @@
       document.getElementById('editor-node-id').innerText = n.node;
       document.getElementById('editor-node-type').value = n.type || 'standard';
       document.getElementById('editor-next-nodes').value = (n.next_nodes || []).join(',');
-      document.getElementById('editor-required-xp').value = n.required_xp || 50;
+      document.getElementById('editor-required-xp').value = n.required_xp || (n.node * 50);
 
       document.getElementById('editor-required-item').value = n.required_item || '';
       document.getElementById('editor-shop-item-name').value = n.shop_item_name || '';
