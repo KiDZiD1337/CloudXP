@@ -7,25 +7,39 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden; }
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 0; min-height: 100vh; overflow: hidden; }
     
     /* Login-vy centrering */
-    .login-container { text-align: center; background: #1e1e1e; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); max-width: 400px; width: 90%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    .login-container { text-align: center; background: #1e1e1e; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); max-width: 400px; width: 90%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; }
 
-    /* Layout för kartvy och svävande moduler */
-    .viewport-overlay { display: none; width: 100vw; min-height: 100vh; position: relative; padding: 1rem; }
-    
-    .card { background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(8px); padding: 1.2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.7); border: 1px solid #333; }
+    /* Kartyta (Fullskärm bakgrund) */
+    .map-viewport { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #000; }
+    .map-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+    .map-image { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-    /* ÖVRE VÄNSTRA HÖRNET: Profil & Quests */
-    .profile-widget { position: absolute; top: 1rem; left: 1rem; width: 380px; max-height: calc(100vh - 2rem); overflow-y: auto; z-index: 10; }
+    /* Cloudie Marker på kartan */
+    .cloudie-marker { position: absolute; width: 36px; height: 36px; background: #ff9800; border: 3px solid #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; transform: translate(-50%, -100%); box-shadow: 0 4px 10px rgba(0,0,0,0.8); transition: all 0.5s ease-in-out; z-index: 5; animation: bounce 1.5s infinite alternate; }
+    .cloudie-name { position: absolute; top: -20px; background: rgba(0,0,0,0.8); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; white-space: nowrap; }
 
-    /* NEDRE HÖGRA HÖRNET: Leaderboard */
-    .leaderboard-widget { position: absolute; bottom: 1rem; right: 1rem; width: 340px; max-height: 500px; overflow-y: auto; z-index: 10; }
+    @keyframes bounce {
+      0% { transform: translate(-50%, -100%); }
+      100% { transform: translate(-50%, -115%); }
+    }
 
-    /* Mobilanpassning: Stacker dem vertikalt vid mindre skärmar */
+    /* Moduler ovanpå kartan */
+    .viewport-overlay { display: none; width: 100vw; height: 100vh; position: relative; z-index: 2; pointer-events: none; }
+    .card { background: rgba(30, 30, 30, 0.92); backdrop-filter: blur(8px); padding: 1.2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.7); border: 1px solid #333; pointer-events: auto; }
+
+    /* ÖVRE VÄNSTER: Profil & Quests */
+    .profile-widget { position: absolute; top: 1rem; left: 1rem; width: 360px; max-height: calc(100vh - 2rem); overflow-y: auto; }
+
+    /* NEDRE HÖGER: Leaderboard */
+    .leaderboard-widget { position: absolute; bottom: 1rem; right: 1rem; width: 320px; max-height: 480px; overflow-y: auto; }
+
     @media (max-width: 820px) {
-      .viewport-overlay { display: flex; flex-direction: column; gap: 1rem; position: static; padding: 1rem; }
+      body { overflow-y: auto; }
+      .map-viewport { position: relative; height: 350px; }
+      .viewport-overlay { display: flex; flex-direction: column; gap: 1rem; position: static; padding: 1rem; height: auto; pointer-events: auto; }
       .profile-widget, .leaderboard-widget { position: static; width: 100%; max-height: none; }
     }
 
@@ -39,7 +53,6 @@
     .xp-bar-bg { background: #2a2a2a; height: 8px; border-radius: 4px; overflow: hidden; width: 100%; }
     .xp-bar-fill { background: linear-gradient(90deg, #ff9800, #ffeb3b); height: 100%; width: 0%; transition: width 0.4s ease; }
 
-    /* Leaderboard stil */
     .leaderboard-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 6px; margin-bottom: 8px; }
     .leaderboard-header h3 { margin: 0; font-size: 15px; color: #ff9800; }
     .tab-container { display: flex; gap: 4px; margin-bottom: 10px; }
@@ -67,17 +80,25 @@
 </head>
 <body>
 
-  <!-- Inloggningsvy när man är utloggad -->
+  <!-- Inloggningsvy -->
   <div id="login-card" class="login-container">
     <h1>CloudXP 🎮</h1>
     <p>Logga in för att påbörja ditt äventyr.</p>
     <button id="login-btn">Logga in med Google</button>
   </div>
 
-  <!-- Svävande gränssnitt över kartytan -->
+  <!-- Kartyta (Bakgrund) -->
+  <div id="map-viewport" class="map-viewport" style="display: none;">
+    <div class="map-container" id="map-container">
+      <img id="active-map-img" class="map-image" src="" alt="Månadens Karta">
+      <div id="cloudie-overlay"></div>
+    </div>
+  </div>
+
+  <!-- Flytande Moduler -->
   <div id="dashboard" class="viewport-overlay">
     
-    <!-- ÖVRE VÄNSTER: Profil, Stats & Quests -->
+    <!-- Profil & Quests -->
     <div class="card profile-widget">
       <h2 id="user-name" style="margin: 0 0 8px 0; font-size: 18px;">Välkommen!</h2>
       
@@ -105,7 +126,7 @@
       <button id="logout-btn" style="background-color: #e53935; margin-top: 1rem; width: 100%;">Logga ut</button>
     </div>
 
-    <!-- NEDRE HÖGER: Leaderboard & Socialt -->
+    <!-- Leaderboard -->
     <div class="card leaderboard-widget">
       <div class="leaderboard-header">
         <h3>🏆 Leaderboard</h3>
@@ -132,6 +153,7 @@
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
     let activeTab = 'house';
+    let currentMapNodes = [];
 
     document.getElementById('login-btn').addEventListener('click', async () => {
       const { error } = await db.auth.signInWithOAuth({
@@ -157,6 +179,35 @@
       document.getElementById('next-level').innerText = level + 1;
       document.getElementById('target-xp').innerText = nextLevelXp;
       document.getElementById('xp-fill').style.width = percentage + '%';
+    }
+
+    async function loadActiveMapAndPosition(userNode) {
+      const monthKey = '2026-08';
+      const { data: mapData } = await db.from('active_map').select('*').eq('month_key', monthKey).single();
+
+      if (mapData) {
+        document.getElementById('active-map-img').src = mapData.image_url;
+        currentMapNodes = mapData.nodes_json || [];
+        renderCloudieOnNode(userNode);
+      }
+    }
+
+    function renderCloudieOnNode(nodeNum) {
+      const overlay = document.getElementById('cloudie-overlay');
+      overlay.innerHTML = '';
+
+      if (!currentMapNodes || currentMapNodes.length === 0) return;
+
+      const targetNode = currentMapNodes.find(n => n.node === nodeNum) || currentMapNodes[0];
+
+      if (targetNode) {
+        const marker = document.createElement('div');
+        marker.className = 'cloudie-marker';
+        marker.style.left = `${targetNode.x}%`;
+        marker.style.top = `${targetNode.y}%`;
+        marker.innerHTML = `<div class="cloudie-name">Du (Nod ${nodeNum})</div>☁️`;
+        overlay.appendChild(marker);
+      }
     }
 
     function switchLeaderboardTab(tab) {
@@ -360,6 +411,7 @@
         document.getElementById('user-streak').innerText = data.streak;
         loadHabits(currentUser.id);
         renderLeaderboard();
+        renderCloudieOnNode(data.map_node || 1);
       }
     }
 
@@ -369,9 +421,10 @@
       if (session) {
         currentUser = session.user;
         document.getElementById('login-card').style.display = 'none';
+        document.getElementById('map-viewport').style.display = 'flex';
         document.getElementById('dashboard').style.display = 'block';
 
-        const { data: profile } = await db.from('profiles').select('full_name, xp, level, coins, streak_count, role').eq('id', session.user.id).single();
+        const { data: profile } = await db.from('profiles').select('full_name, xp, level, coins, streak_count, map_node, role').eq('id', session.user.id).single();
 
         if (profile) {
           document.getElementById('user-name').innerText = 'Hej ' + profile.full_name + '!';
@@ -382,6 +435,8 @@
           if (profile.role === 'admin') {
             document.getElementById('admin-link-btn').style.display = 'block';
           }
+
+          loadActiveMapAndPosition(profile.map_node || 1);
         }
 
         renderLeaderboard();
