@@ -16,7 +16,7 @@
 <body>
 
   <div class="card">
-    <h1>Gamified Habits 🎮</h1>
+    <h1>Spel-Habits 🎮</h1>
     <p id="status-text">Logga in för att påbörja ditt äventyr.</p>
     <button id="login-btn">Logga in med Google</button>
     
@@ -28,7 +28,6 @@
   </div>
 
   <script>
-    // HÄR ÄR DEN KORREKTA ADRESSEN FRÅN DIN BILD:
     const SUPABASE_URL = 'https://phhglvauynccbcpdnjqw.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_ASdxmwP7tzMXRtprVoaM2w_1maNYHQG'; 
 
@@ -56,7 +55,19 @@
         document.getElementById('login-btn').style.display = 'none';
         document.getElementById('status-text').style.display = 'none';
         document.getElementById('profile').style.display = 'block';
-        document.getElementById('user-name').innerText = 'Hej ' + (session.user.user_metadata.full_name || 'Äventyrare') + '!';
+
+        // Hämtar XP och Level från din profiles-tabell i databasen
+        const { data: profile } = await db
+          .from('profiles')
+          .select('full_name, xp, level')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile) {
+          document.getElementById('user-name').innerText = 'Hej ' + profile.full_name + '!';
+          document.getElementById('user-xp').innerText = profile.xp;
+          document.getElementById('user-level').innerText = profile.level;
+        }
       }
     }
 
