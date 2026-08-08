@@ -14,13 +14,10 @@
     .stats-bar { display: flex; justify-content: space-around; background: #2a2a2a; padding: 12px; border-radius: 8px; margin-top: 1rem; font-weight: bold; font-size: 14px; }
     .habit-list { text-align: left; margin-top: 1.5rem; }
     .habit-item { background: #2a2a2a; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-    .habit-actions { display: flex; gap: 6px; }
-    .complete-btn { background-color: #2e7d32; font-size: 13px; padding: 6px 10px; }
+    .complete-btn { background-color: #2e7d32; font-size: 13px; padding: 6px 12px; }
     .complete-btn:hover { background-color: #1b5e20; }
-    .delete-btn { background-color: #c62828; font-size: 13px; padding: 6px 10px; }
-    .delete-btn:hover { background-color: #8e0000; }
-    .add-habit-form { display: flex; gap: 8px; margin-top: 1rem; }
-    .add-habit-form input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: white; }
+    .disabled-btn { background-color: #444; color: #888; cursor: not-allowed; }
+    .disabled-btn:hover { background-color: #444; }
     .admin-btn { display: none; background-color: #7b1fa2; margin-top: 1rem; width: 100%; }
     .admin-btn:hover { background-color: #6a1b9a; }
   </style>
@@ -41,14 +38,9 @@
         <span>💰 <span id="user-coins">0</span> Coins</span>
       </div>
 
-      <form id="add-habit-form" class="add-habit-form">
-        <input type="text" id="habit-title" placeholder="Ny vana..." required>
-        <button type="submit" style="background-color: #388e3c;">+ Lägg till</button>
-      </form>
-      
       <div class="habit-list">
-        <h3>Mina Vanor</h3>
-        <div id="habits-container">Laddar vanor...</div>
+        <h3>Dagens Utmaningar</h3>
+        <div id="habits-container">Laddar utmaningar...</div>
       </div>
 
       <button id="admin-link-btn" class="admin-btn" onclick="window.location.href='admin.html'">⚙️ Admin Panel</button>
@@ -78,37 +70,38 @@
       window.location.reload();
     });
 
-    document.getElementById('add-habit-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const input = document.getElementById('habit-title');
-      const title = input.value.trim();
-      
-      if (title && currentUser) {
-        await db.from('habits').insert({ user_id: currentUser.id, title: title, xp_reward: 10, coin_reward: 5 });
-        input.value = '';
-        loadHabits(currentUser.id);
-      }
-    });
-
     async function loadHabits(userId) {
       const { data: habits } = await db.from('habits').select('*').eq('user_id', userId);
+      
+      // Hämta loggar gjorda idag
+      const todayStart = new Date();
+      todayStart.setHours(0,0,0,0);
+
+      const { data: todayLogs } = await db.from('habit_logs')
+        .select('habit_id')
+        .eq('user_id', userId)
+        .gte('completed_at', todayStart.toISOString());
+
+      const completedHabitIds = new Set(todayLogs ? todayLogs.map(l => l.habit_id) : []);
+
       const container = document.getElementById('habits-container');
       
       if (!habits || habits.length === 0) {
-        container.innerHTML = '<p>Inga vanor tillagda ännu.</p>';
+        container.innerHTML = '<p>Inga utmaningar tillgängliga.</p>';
         return;
       }
 
       container.innerHTML = '';
       habits.forEach(habit => {
+        const isDoneToday = completedHabitIds.has(habit.id);
         const div = document.createElement('div');
         div.className = 'habit-item';
         div.innerHTML = `
-          <span>${habit.title} (+${habit.xp_reward} XP / +${habit.coin_reward || 5} 💰)</span>
-          <div class="habit-actions">
-            <button class="complete-btn" onclick="claimRewards('${habit.id}', ${habit.xp_reward}, ${habit.coin_reward || 5})">Klar!</button>
-            <button class="delete-btn" onclick="deleteHabit('${habit.id}')">🗑️</button>
-          </div>
+          <span>${habit.title} (+${habit.xp_reward} XP / +${habit.coin_reward} 💰)</span>
+          ${isDoneToday 
+            ? `<button class="complete-btn disabled-btn" disabled>Klaridag! ✅</button>`
+            : `<button class="complete-btn" onclick="claimRewards('${habit.id}', ${habit.xp_reward}, ${habit.coin_reward})">Klar!</button>`
+          }
         `;
         container.appendChild(div);
       });
@@ -125,13 +118,8 @@
 
       await db.from('profiles').update({ xp: currentXp, coins: currentCoins, level: newLevel }).eq('id', currentUser.id);
       await db.from('habit_logs').insert({ user_id: currentUser.id, habit_id: habitId });
-    }
 
-    async function deleteHabit(habitId) {
-      if (confirm('Vill du ta bort denna vana?')) {
-        await db.from('habits').delete().eq('id', habitId);
-        loadHabits(currentUser.id);
-      }
+      loadHabits(currentUser.id);
     }
 
     async function checkUser() {
