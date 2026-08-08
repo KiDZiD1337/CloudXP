@@ -43,7 +43,13 @@
     /* Nod-Karterare */
     .map-mapper-container { position: relative; display: inline-block; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid #444; margin-top: 1rem; cursor: crosshair; }
     .map-mapper-container img { width: 100%; display: block; }
-    .node-pin { position: absolute; width: 22px; height: 22px; background: #ff9800; color: black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid white; transform: translate(-50%, -50%); pointer-events: none; box-shadow: 0 2px 6px rgba(0,0,0,0.8); }
+    .node-pin { position: absolute; width: 24px; height: 24px; background: #ff9800; color: black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid white; transform: translate(-50%, -50%); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.8); z-index: 10; }
+    .node-pin.type-shop { background: #2e7d32; color: white; }
+    .node-pin.type-branch { background: #1565c0; color: white; }
+    .node-pin.type-gate { background: #c62828; color: white; }
+
+    /* Modal / Konfigurationspanel för valda noder */
+    .node-editor { background: #2a2a2a; padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px solid #444; }
 
     .action-btn { background-color: #2e7d32; font-size: 12px; padding: 6px 10px; border-radius: 4px; }
     .action-btn:hover { background-color: #1b5e20; }
@@ -75,7 +81,7 @@
       
       <!-- Nod-Karterare för Månadens Karta -->
       <div class="admin-card">
-        <h2>🗺️ Hantera Månadens Karta & Noder</h2>
+        <h2>🗺️ Hantera Månadens Karta, Vägskäl & Shops</h2>
         <div class="form-row">
           <div class="form-group" style="flex: 1;">
             <label>Månadsnyckel (ÅÅÅÅ-MM):</label>
@@ -92,12 +98,58 @@
 
         <div id="mapping-area" style="display: none; margin-top: 1rem;">
           <p style="font-size: 13px; color: #aaa; margin-bottom: 8px;">
-            Klicka på de gula cirklarna i ordning (från start till mål) för att placera noderna 1, 2, 3...
+            Klicka på kartan för att placera en ny nod. Klicka på en befintlig nod för att redigera dess regler, vägskäl eller shop.
           </p>
           
           <div class="map-mapper-container" id="map-container" onclick="handleMapClick(event)">
             <img id="map-preview" src="" alt="Månadens karta">
             <div id="nodes-overlay"></div>
+          </div>
+
+          <!-- Redigera Vald Nod -->
+          <div id="node-editor-card" class="node-editor" style="display: none;">
+            <h3>⚙️ Redigera Nod <span id="editor-node-id">1</span></h3>
+            <div class="form-row">
+              <div class="form-group" style="flex: 1;">
+                <label>Nodtyp:</label>
+                <select id="editor-node-type" onchange="updateEditorFields()">
+                  <option value="standard">🟡 Standard (XP-krav)</option>
+                  <option value="branch">🔀 Vägskäl (Grenar ut)</option>
+                  <option value="shop">🛒 Shop (Köp Prylar)</option>
+                  <option value="gate">🔒 Låst Port (Kräver Item)</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label>Koppla till Nästa Nod(er):</label>
+                <input type="text" id="editor-next-nodes" placeholder="t.ex. 2 eller vid vägskäl 4,10">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label>Mål Månads-XP:</label>
+                <input type="number" id="editor-required-xp" value="50">
+              </div>
+            </div>
+
+            <!-- Fält för Låst Port / Item -->
+            <div id="gate-fields" class="form-row" style="display: none;">
+              <div class="form-group" style="flex: 1;">
+                <label>Kräver Föremål (Item Name):</label>
+                <input type="text" id="editor-required-item" placeholder="t.ex. Old Key">
+              </div>
+            </div>
+
+            <!-- Fält för Shop -->
+            <div id="shop-fields" class="form-row" style="display: none;">
+              <div class="form-group" style="flex: 2;">
+                <label>Shop Item (Namn):</label>
+                <input type="text" id="editor-shop-item-name" placeholder="t.ex. Speed Boots">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label>Pris (Coins):</label>
+                <input type="number" id="editor-shop-item-cost" value="100">
+              </div>
+            </div>
+
+            <button type="button" onclick="saveSelectedNodeChanges()" style="background:#2e7d32;">Spara Nodinställningar ⚙️</button>
           </div>
 
           <div style="margin-top: 1rem; display: flex; gap: 10px;">
@@ -150,6 +202,10 @@
               <label>Coin Belöning:</label>
               <input type="number" id="quest-coins" value="10" required>
             </div>
+            <div class="form-group" style="flex: 1;">
+              <label>Föremålsbelöning (Valfri):</label>
+              <input type="text" id="quest-item-reward" placeholder="t.ex. Old Key">
+            </div>
           </div>
           <button type="submit">Spara & Publicera Utmaning 🚀</button>
         </form>
@@ -164,12 +220,13 @@
             <th>Typ</th>
             <th>XP</th>
             <th>Coins</th>
+            <th>Item Reward</th>
             <th>Skapad</th>
             <th>Åtgärd</th>
           </tr>
         </thead>
         <tbody id="pool-table-body">
-          <tr><td colspan="6">Laddar quest pool...</td></tr>
+          <tr><td colspan="7">Laddar quest pool...</td></tr>
         </tbody>
       </table>
 
@@ -218,6 +275,7 @@
 
     let searchDebounce = null;
     let mapNodes = [];
+    let selectedNodeIndex = null;
 
     async function initAdmin() {
       const { data: { session } } = await db.auth.getSession();
@@ -271,36 +329,102 @@
     }
 
     function handleMapClick(e) {
+      if (e.target.classList.contains('node-pin')) {
+        const index = parseInt(e.target.getAttribute('data-index'));
+        openNodeEditor(index);
+        return;
+      }
+
       const rect = e.currentTarget.getBoundingClientRect();
       const xPercent = parseFloat((((e.clientX - rect.left) / rect.width) * 100).toFixed(2));
       const yPercent = parseFloat((((e.clientY - rect.top) / rect.height) * 100).toFixed(2));
 
-      const newNode = { node: mapNodes.length + 1, x: xPercent, y: yPercent };
+      const nodeNum = mapNodes.length + 1;
+      const newNode = { 
+        node: nodeNum, 
+        x: xPercent, 
+        y: yPercent,
+        type: 'standard',
+        next_nodes: [nodeNum + 1],
+        required_xp: nodeNum * 50
+      };
+
       mapNodes.push(newNode);
       renderNodesOverlay();
+      openNodeEditor(mapNodes.length - 1);
+    }
+
+    function openNodeEditor(index) {
+      selectedNodeIndex = index;
+      const n = mapNodes[index];
+
+      document.getElementById('editor-node-id').innerText = n.node;
+      document.getElementById('editor-node-type').value = n.type || 'standard';
+      document.getElementById('editor-next-nodes').value = (n.next_nodes || []).join(',');
+      document.getElementById('editor-required-xp').value = n.required_xp || 50;
+
+      document.getElementById('editor-required-item').value = n.required_item || '';
+      document.getElementById('editor-shop-item-name').value = n.shop_item_name || '';
+      document.getElementById('editor-shop-item-cost').value = n.shop_item_cost || 100;
+
+      updateEditorFields();
+      document.getElementById('node-editor-card').style.display = 'block';
+    }
+
+    function updateEditorFields() {
+      const type = document.getElementById('editor-node-type').value;
+      document.getElementById('gate-fields').style.display = type === 'gate' ? 'flex' : 'none';
+      document.getElementById('shop-fields').style.display = type === 'shop' ? 'flex' : 'none';
+    }
+
+    function saveSelectedNodeChanges() {
+      if (selectedNodeIndex === null) return;
+
+      const type = document.getElementById('editor-node-type').value;
+      const nextStr = document.getElementById('editor-next-nodes').value.trim();
+      const reqXp = parseInt(document.getElementById('editor-required-xp').value);
+
+      const nextNodes = nextStr ? nextStr.split(',').map(num => parseInt(num.trim())).filter(Boolean) : [];
+
+      mapNodes[selectedNodeIndex].type = type;
+      mapNodes[selectedNodeIndex].next_nodes = nextNodes;
+      mapNodes[selectedNodeIndex].required_xp = reqXp;
+
+      if (type === 'gate') {
+        mapNodes[selectedNodeIndex].required_item = document.getElementById('editor-required-item').value.trim();
+      } else if (type === 'shop') {
+        mapNodes[selectedNodeIndex].shop_item_name = document.getElementById('editor-shop-item-name').value.trim();
+        mapNodes[selectedNodeIndex].shop_item_cost = parseInt(document.getElementById('editor-shop-item-cost').value);
+      }
+
+      renderNodesOverlay();
+      alert(`Nod ${mapNodes[selectedNodeIndex].node} sparad!`);
     }
 
     function renderNodesOverlay() {
       const overlay = document.getElementById('nodes-overlay');
       overlay.innerHTML = '';
 
-      mapNodes.forEach(n => {
+      mapNodes.forEach((n, idx) => {
         const pin = document.createElement('div');
-        pin.className = 'node-pin';
+        pin.className = `node-pin type-${n.type || 'standard'}`;
         pin.style.left = `${n.x}%`;
         pin.style.top = `${n.y}%`;
         pin.innerText = n.node;
+        pin.setAttribute('data-index', idx);
         overlay.appendChild(pin);
       });
     }
 
     function undoLastNode() {
       mapNodes.pop();
+      document.getElementById('node-editor-card').style.display = 'none';
       renderNodesOverlay();
     }
 
     function clearAllNodes() {
       mapNodes = [];
+      document.getElementById('node-editor-card').style.display = 'none';
       renderNodesOverlay();
     }
 
@@ -416,6 +540,7 @@
       const type = document.getElementById('quest-type').value;
       const xp = parseInt(document.getElementById('quest-xp').value);
       const coins = parseInt(document.getElementById('quest-coins').value);
+      const itemReward = document.getElementById('quest-item-reward').value.trim();
       
       const targetType = document.getElementById('selected-target-type').value;
       const targetId = document.getElementById('selected-target-id').value;
@@ -430,7 +555,8 @@
         type_val: type,
         is_core_val: false,
         target_user_id: targetUserId,
-        target_household_id: targetHouseholdId
+        target_household_id: targetHouseholdId,
+        item_val: itemReward || null
       });
 
       if (error) {
@@ -438,16 +564,18 @@
       } else {
         alert(`Utmaningen "${title}" har publicerats!`);
         document.getElementById('quest-title').value = '';
+        document.getElementById('quest-item-reward').value = '';
         resetTargetSelection();
         loadQuestPool();
       }
     });
 
-    function reuseQuest(title, type, xp, coins) {
+    function reuseQuest(title, type, xp, coins, item) {
       document.getElementById('quest-title').value = title;
       document.getElementById('quest-type').value = type;
       document.getElementById('quest-xp').value = xp;
       document.getElementById('quest-coins').value = coins;
+      document.getElementById('quest-item-reward').value = item || '';
       document.getElementById('quest-form-card').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -457,7 +585,7 @@
       tbody.innerHTML = '';
 
       if (!quests || quests.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6">Inga uppdrag i poolen ännu.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7">Inga uppdrag i poolen ännu.</td></tr>';
         return;
       }
 
@@ -465,15 +593,17 @@
         const tr = document.createElement('tr');
         const dateStr = new Date(q.created_at).toLocaleDateString('sv-SE');
         const safeTitle = q.title.replace(/'/g, "\\'");
+        const safeItem = (q.item_reward || '').replace(/'/g, "\\'");
 
         tr.innerHTML = `
           <td><strong>${q.title}</strong></td>
           <td><span class="badge badge-type">${q.quest_type}</span></td>
           <td>+${q.xp_reward} XP</td>
           <td>💰 ${q.coin_reward}</td>
+          <td>${q.item_reward ? `🎁 ${q.item_reward}` : '-'}</td>
           <td>${dateStr}</td>
           <td>
-            <button class="action-btn" onclick="reuseQuest('${safeTitle}', '${q.quest_type}', ${q.xp_reward}, ${q.coin_reward})">📋 Kopiera</button>
+            <button class="action-btn" onclick="reuseQuest('${safeTitle}', '${q.quest_type}', ${q.xp_reward}, ${q.coin_reward}, '${safeItem}')">📋 Kopiera</button>
           </td>
         `;
         tbody.appendChild(tr);
