@@ -19,6 +19,13 @@
     .xp-bar-bg { background: #2a2a2a; height: 10px; border-radius: 5px; overflow: hidden; width: 100%; }
     .xp-bar-fill { background: linear-gradient(90deg, #ff9800, #ffeb3b); height: 100%; width: 0%; transition: width 0.4s ease; }
 
+    .household-card { background: #2a2a2a; padding: 12px; border-radius: 8px; margin-top: 1.2rem; text-align: left; }
+    .household-card h3 { margin: 0 0 8px 0; font-size: 14px; color: #4caf50; display: flex; justify-content: space-between; align-items: center; }
+    .member-item { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px solid #333; }
+    .household-form { display: flex; gap: 6px; margin-top: 8px; }
+    .household-form input { flex: 1; padding: 6px 10px; border-radius: 4px; border: 1px solid #444; background: #1e1e1e; color: white; font-size: 12px; }
+    .household-form button { padding: 6px 12px; font-size: 12px; background-color: #388e3c; }
+
     .habit-list { text-align: left; margin-top: 1.5rem; }
     .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #ff9800; margin-top: 1.2rem; margin-bottom: 0.5rem; font-weight: bold; }
     .habit-item { background: #2a2a2a; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
@@ -55,6 +62,12 @@
         <div class="xp-bar-bg">
           <div id="xp-fill" class="xp-bar-fill"></div>
         </div>
+      </div>
+
+      <!-- Hushållssektion -->
+      <div class="household-card" id="household-section">
+        <h3>🏠 Mitt Hem <span id="invite-code-display" style="font-size: 11px; color: #aaa;"></span></h3>
+        <div id="household-content">Laddar hem...</div>
       </div>
 
       <div class="habit-list">
@@ -97,6 +110,75 @@
       document.getElementById('next-level').innerText = level + 1;
       document.getElementById('target-xp').innerText = nextLevelXp;
       document.getElementById('xp-fill').style.width = percentage + '%';
+    }
+
+    async function loadHousehold(userId) {
+      const content = document.getElementById('household-content');
+      const codeDisplay = document.getElementById('invite-code-display');
+
+      // Kolla om användaren är med i ett hem
+      const { data: member } = await db.from('household_members').select('household_id').eq('user_id', userId).single();
+
+      if (!member) {
+        codeDisplay.innerText = '';
+        content.innerHTML = `
+          <p style="font-size: 12px; margin: 4px 0 8px 0; color: #aaa;">Du tillhör inget hem ännu.</p>
+          <div class="household-form">
+            <input type="text" id="new-house-name" placeholder="Skapa hem (namn)">
+            <button onclick="createHouse()">Skapa</button>
+          </div>
+          <div class="household-form">
+            <input type="text" id="join-house-code" placeholder="Gå med (kod)">
+            <button onclick="joinHouse()" style="background-color: #1565c0;">Gå med</button>
+          </div>
+        `;
+        return;
+      }
+
+      // Hämta hemmets info
+      const { data: house } = await db.from('households').select('*').eq('id', member.household_id).single();
+      codeDisplay.innerText = `Kod: ${house.invite_code}`;
+
+      // Hämta alla medlemmar i hemmet med deras profiler
+      const { data: members } = await db.from('household_members')
+        .select('user_id, profiles(full_name, level, xp)')
+        .eq('household_id', house.id);
+
+      let html = `<strong style="font-size: 13px; color: #fff;">${house.name}</strong><div style="margin-top: 6px;">`;
+      
+      if (members) {
+        members.sort((a, b) => (b.profiles?.xp || 0) - (a.profiles?.xp || 0));
+        members.forEach((m, idx) => {
+          html += `
+            <div class="member-item">
+              <span>${idx + 1}. ${m.profiles?.full_name || 'Anonym'}</span>
+              <span>⭐ Lvl ${m.profiles?.level || 1} (${m.profiles?.xp || 0} XP)</span>
+            </div>
+          `;
+        });
+      }
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    async function createHouse() {
+      const input = document.getElementById('new-house-name');
+      const name = input.value.trim();
+      if (!name) return;
+
+      const { error } = await db.rpc('create_household', { h_name: name });
+      if (error) alert('Fel: ' + error.message);
+      else loadHousehold(currentUser.id);
+    }
+
+    async function joinHouse() {
+      const input = document.getElementById('join-house-code');
+      const code = input.value.trim();
+      if (!code) return;
+
+      const { error } = await db.rpc('join_household', { p_code: code });
+      if (error) alert('Fel: ' + error.message);
+      else loadHousehold(currentUser.id);
     }
 
     async function loadHabits(userId) {
@@ -142,7 +224,7 @@
             div.innerHTML = `
               <span>${habit.title} (+${habit.xp_reward} XP / +${habit.coin_reward} 💰)</span>
               ${isDoneToday 
-                ? `<button class="complete-btn disabled-btn" disabled>Klar för idag! ✅</button>`
+                ? `<button class="complete-btn disabled-btn" disabled>Klaridag! ✅</button>`
                 : `<button class="complete-btn" onclick="claimRewards('${habit.id}')">Klar!</button>`
               }
             `;
@@ -162,6 +244,7 @@
         document.getElementById('user-coins').innerText = data.coins;
         document.getElementById('user-streak').innerText = data.streak;
         loadHabits(currentUser.id);
+        loadHousehold(currentUser.id);
       }
     }
 
@@ -187,6 +270,7 @@
           }
         }
 
+        loadHousehold(session.user.id);
         loadHabits(session.user.id);
       }
     }
