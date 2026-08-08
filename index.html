@@ -6,51 +6,80 @@
   <title>CloudXP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 1rem; }
-    .card { background: #1e1e1e; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); text-align: center; max-width: 480px; width: 100%; box-sizing: border-box; }
-    button { background-color: #4285F4; color: white; border: none; padding: 10px 18px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden; }
+    
+    /* Login-vy centrering */
+    .login-container { text-align: center; background: #1e1e1e; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); max-width: 400px; width: 90%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+    /* Layout för kartvy och svävande moduler */
+    .viewport-overlay { display: none; width: 100vw; min-height: 100vh; position: relative; padding: 1rem; }
+    
+    .card { background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(8px); padding: 1.2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.7); border: 1px solid #333; }
+
+    /* ÖVRE VÄNSTRA HÖRNET: Profil & Quests */
+    .profile-widget { position: absolute; top: 1rem; left: 1rem; width: 380px; max-height: calc(100vh - 2rem); overflow-y: auto; z-index: 10; }
+
+    /* NEDRE HÖGRA HÖRNET: Leaderboard */
+    .leaderboard-widget { position: absolute; bottom: 1rem; right: 1rem; width: 340px; max-height: 500px; overflow-y: auto; z-index: 10; }
+
+    /* Mobilanpassning: Stacker dem vertikalt vid mindre skärmar */
+    @media (max-width: 820px) {
+      .viewport-overlay { display: flex; flex-direction: column; gap: 1rem; position: static; padding: 1rem; }
+      .profile-widget, .leaderboard-widget { position: static; width: 100%; max-height: none; }
+    }
+
+    button { background-color: #4285F4; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
     button:hover { background-color: #357ae8; }
-    .profile-info { display: none; }
     
-    .stats-bar { display: flex; justify-content: space-around; background: #2a2a2a; padding: 12px; border-radius: 8px; margin-top: 1rem; font-weight: bold; font-size: 14px; }
+    .stats-bar { display: flex; justify-content: space-around; background: #2a2a2a; padding: 10px; border-radius: 8px; margin-top: 0.8rem; font-weight: bold; font-size: 13px; text-align: center; }
     
-    .xp-progress-container { margin-top: 1rem; text-align: left; }
-    .xp-text { font-size: 12px; color: #aaa; margin-bottom: 4px; display: flex; justify-content: space-between; }
-    .xp-bar-bg { background: #2a2a2a; height: 10px; border-radius: 5px; overflow: hidden; width: 100%; }
+    .xp-progress-container { margin-top: 0.8rem; }
+    .xp-text { font-size: 11px; color: #aaa; margin-bottom: 4px; display: flex; justify-content: space-between; }
+    .xp-bar-bg { background: #2a2a2a; height: 8px; border-radius: 4px; overflow: hidden; width: 100%; }
     .xp-bar-fill { background: linear-gradient(90deg, #ff9800, #ffeb3b); height: 100%; width: 0%; transition: width 0.4s ease; }
 
-    .social-card { background: #2a2a2a; padding: 14px; border-radius: 8px; margin-top: 1.2rem; text-align: left; }
-    .social-card h3 { margin: 0 0 8px 0; font-size: 14px; color: #4caf50; display: flex; justify-content: space-between; align-items: center; }
-    .social-card h3.global-title { color: #ff9800; }
-    
-    .member-item { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #333; }
+    /* Leaderboard stil */
+    .leaderboard-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 6px; margin-bottom: 8px; }
+    .leaderboard-header h3 { margin: 0; font-size: 15px; color: #ff9800; }
+    .tab-container { display: flex; gap: 4px; margin-bottom: 10px; }
+    .tab-btn { background: #2a2a2a; color: #aaa; border: none; padding: 6px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; flex: 1; text-align: center; }
+    .tab-btn.active { background: #388e3c; color: white; font-weight: bold; }
+
+    .member-item { display: flex; justify-content: space-between; font-size: 12px; padding: 6px 0; border-bottom: 1px solid #333; }
     .member-item:last-child { border-bottom: none; }
     
     .household-form { display: flex; gap: 6px; margin-top: 8px; }
-    .household-form input { flex: 1; padding: 6px 10px; border-radius: 4px; border: 1px solid #444; background: #1e1e1e; color: white; font-size: 12px; }
-    .household-form button { padding: 6px 12px; font-size: 12px; background-color: #388e3c; }
+    .household-form input { flex: 1; padding: 6px 8px; border-radius: 4px; border: 1px solid #444; background: #1e1e1e; color: white; font-size: 11px; }
+    .household-form button { padding: 6px 10px; font-size: 11px; background-color: #388e3c; }
 
-    .habit-list { text-align: left; margin-top: 1.5rem; }
-    .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #ff9800; margin-top: 1.2rem; margin-bottom: 0.5rem; font-weight: bold; }
-    .habit-item { background: #2a2a2a; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-    .complete-btn { background-color: #2e7d32; font-size: 13px; padding: 6px 12px; }
+    .habit-list { margin-top: 1rem; }
+    .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #ff9800; margin-top: 1rem; margin-bottom: 0.4rem; font-weight: bold; }
+    .habit-item { background: #2a2a2a; padding: 10px; border-radius: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+    .complete-btn { background-color: #2e7d32; font-size: 11px; padding: 5px 10px; }
     .complete-btn:hover { background-color: #1b5e20; }
     .disabled-btn { background-color: #444; color: #888; cursor: not-allowed; }
     .disabled-btn:hover { background-color: #444; }
     
-    .admin-btn { display: none; background-color: #7b1fa2; margin-top: 1.5rem; width: 100%; }
+    .admin-btn { display: none; background-color: #7b1fa2; margin-top: 1rem; width: 100%; }
     .admin-btn:hover { background-color: #6a1b9a; }
   </style>
 </head>
 <body>
 
-  <div class="card">
+  <!-- Inloggningsvy när man är utloggad -->
+  <div id="login-card" class="login-container">
     <h1>CloudXP 🎮</h1>
-    <p id="status-text">Logga in för att påbörja ditt äventyr.</p>
+    <p>Logga in för att påbörja ditt äventyr.</p>
     <button id="login-btn">Logga in med Google</button>
+  </div>
+
+  <!-- Svävande gränssnitt över kartytan -->
+  <div id="dashboard" class="viewport-overlay">
     
-    <div id="profile" class="profile-info">
-      <h2 id="user-name">Välkommen!</h2>
+    <!-- ÖVRE VÄNSTER: Profil, Stats & Quests -->
+    <div class="card profile-widget">
+      <h2 id="user-name" style="margin: 0 0 8px 0; font-size: 18px;">Välkommen!</h2>
       
       <div class="stats-bar">
         <span>⭐ Lvl <span id="user-level">1</span></span>
@@ -68,24 +97,32 @@
         </div>
       </div>
 
-      <!-- Separata Kort -->
-      <div class="social-card" id="household-section">
-        <h3>🏠 Mitt Hem <span id="invite-code-display" style="font-size: 11px; color: #aaa;"></span></h3>
-        <div id="household-content">Laddar hem...</div>
-      </div>
-
-      <div class="social-card" id="global-section">
-        <h3 class="global-title">🏆 Global Leaderboard (Top 10)</h3>
-        <div id="global-content">Laddar topplista...</div>
-      </div>
-
       <div class="habit-list">
         <div id="habits-container">Laddar utmaningar...</div>
       </div>
 
       <button id="admin-link-btn" class="admin-btn" onclick="window.location.href='admin.html'">⚙️ Admin Panel</button>
-      <button id="logout-btn" style="background-color: #e53935; margin-top: 1.5rem;">Logga ut</button>
+      <button id="logout-btn" style="background-color: #e53935; margin-top: 1rem; width: 100%;">Logga ut</button>
     </div>
+
+    <!-- NEDRE HÖGER: Leaderboard & Socialt -->
+    <div class="card leaderboard-widget">
+      <div class="leaderboard-header">
+        <h3>🏆 Leaderboard</h3>
+        <span id="invite-code-display" style="font-size: 10px; color: #aaa;"></span>
+      </div>
+
+      <div class="tab-container">
+        <button id="tab-house-btn" class="tab-btn active" onclick="switchLeaderboardTab('house')">🏠 Hem</button>
+        <button id="tab-global-users-btn" class="tab-btn" onclick="switchLeaderboardTab('global-users')">🌍 Spelare</button>
+        <button id="tab-global-houses-btn" class="tab-btn" onclick="switchLeaderboardTab('global-houses')">🏘️ Hem-rank</button>
+      </div>
+
+      <div id="leaderboard-content">
+        Laddar topplista...
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -94,6 +131,7 @@
 
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
+    let activeTab = 'house';
 
     document.getElementById('login-btn').addEventListener('click', async () => {
       const { error } = await db.auth.signInWithOAuth({
@@ -121,41 +159,73 @@
       document.getElementById('xp-fill').style.width = percentage + '%';
     }
 
-    async function loadHousehold(userId) {
-      const content = document.getElementById('household-content');
+    function switchLeaderboardTab(tab) {
+      activeTab = tab;
+      document.getElementById('tab-house-btn').classList.toggle('active', tab === 'house');
+      document.getElementById('tab-global-users-btn').classList.toggle('active', tab === 'global-users');
+      document.getElementById('tab-global-houses-btn').classList.toggle('active', tab === 'global-houses');
+
+      renderLeaderboard();
+    }
+
+    async function renderLeaderboard() {
+      const content = document.getElementById('leaderboard-content');
       const codeDisplay = document.getElementById('invite-code-display');
 
-      const { data: member } = await db.from('household_members').select('household_id').eq('user_id', userId).single();
+      if (activeTab === 'house') {
+        const { data: member } = await db.from('household_members').select('household_id').eq('user_id', currentUser.id).single();
 
-      if (!member) {
+        if (!member) {
+          codeDisplay.innerText = '';
+          content.innerHTML = `
+            <p style="font-size: 11px; color: #aaa;">Du tillhör inget hem ännu.</p>
+            <div class="household-form">
+              <input type="text" id="new-house-name" placeholder="Skapa hem (namn)">
+              <button onclick="createHouse()">Skapa</button>
+            </div>
+            <div class="household-form">
+              <input type="text" id="join-house-code" placeholder="Gå med (kod)">
+              <button onclick="joinHouse()" style="background-color: #1565c0;">Gå med</button>
+            </div>
+          `;
+          return;
+        }
+
+        const { data: house } = await db.from('households').select('*').eq('id', member.household_id).single();
+        codeDisplay.innerText = `Kod: ${house.invite_code}`;
+
+        const { data: members } = await db.from('household_members').select('user_id').eq('household_id', house.id);
+        const { data: profiles } = await db.from('profiles').select('id, full_name, level, xp');
+
+        let html = `<strong style="font-size: 12px; color: #388e3c;">${house.name}</strong><div style="margin-top: 4px;">`;
+        if (members && profiles) {
+          const memberProfiles = members.map(m => profiles.find(p => p.id === m.user_id)).filter(Boolean);
+          memberProfiles.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+
+          memberProfiles.forEach((p, idx) => {
+            const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+            html += `
+              <div class="member-item">
+                <span>${medal} ${p.full_name || 'Anonym'}</span>
+                <span>⭐ Lvl ${p.level || 1} (${p.xp || 0} XP)</span>
+              </div>
+            `;
+          });
+        }
+        html += '</div>';
+        content.innerHTML = html;
+
+      } else if (activeTab === 'global-users') {
         codeDisplay.innerText = '';
-        content.innerHTML = `
-          <p style="font-size: 12px; margin: 4px 0 8px 0; color: #aaa;">Du tillhör inget hem ännu.</p>
-          <div class="household-form">
-            <input type="text" id="new-house-name" placeholder="Skapa hem (namn)">
-            <button onclick="createHouse()">Skapa</button>
-          </div>
-          <div class="household-form">
-            <input type="text" id="join-house-code" placeholder="Gå med (kod)">
-            <button onclick="joinHouse()" style="background-color: #1565c0;">Gå med</button>
-          </div>
-        `;
-        return;
-      }
+        const { data: topProfiles } = await db.from('profiles').select('full_name, level, xp').order('xp', { ascending: false }).limit(10);
 
-      const { data: house } = await db.from('households').select('*').eq('id', member.household_id).single();
-      codeDisplay.innerText = `Kod: ${house.invite_code}`;
+        if (!topProfiles || topProfiles.length === 0) {
+          content.innerHTML = '<p style="font-size:11px; color:#aaa;">Ingen data tillgänglig.</p>';
+          return;
+        }
 
-      const { data: members } = await db.from('household_members').select('user_id').eq('household_id', house.id);
-      const { data: profiles } = await db.from('profiles').select('id, full_name, level, xp');
-
-      let html = `<strong style="font-size: 13px; color: #fff;">${house.name}</strong><div style="margin-top: 6px;">`;
-      
-      if (members && profiles) {
-        const memberProfiles = members.map(m => profiles.find(p => p.id === m.user_id)).filter(Boolean);
-        memberProfiles.sort((a, b) => (b.xp || 0) - (a.xp || 0));
-
-        memberProfiles.forEach((p, idx) => {
+        let html = '<div>';
+        topProfiles.forEach((p, idx) => {
           const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
           html += `
             <div class="member-item">
@@ -164,36 +234,46 @@
             </div>
           `;
         });
+        html += '</div>';
+        content.innerHTML = html;
+
+      } else if (activeTab === 'global-houses') {
+        codeDisplay.innerText = '';
+        const { data: households } = await db.from('households').select('*');
+        const { data: members } = await db.from('household_members').select('household_id, user_id');
+        const { data: profiles } = await db.from('profiles').select('id, xp');
+
+        if (!households || households.length === 0) {
+          content.innerHTML = '<p style="font-size:11px; color:#aaa;">Inga hem registrerade ännu.</p>';
+          return;
+        }
+
+        const houseList = households.map(h => {
+          const hMembers = members ? members.filter(m => m.household_id === h.id) : [];
+          let totalXp = 0;
+          hMembers.forEach(m => {
+            const p = profiles ? profiles.find(pr => pr.id === m.user_id) : null;
+            if (p) totalXp += (p.xp || 0);
+          });
+          return { name: h.name, totalXp, membersCount: hMembers.length };
+        });
+
+        houseList.sort((a, b) => b.totalXp - a.totalXp);
+        const topHouses = houseList.slice(0, 5);
+
+        let html = '<div>';
+        topHouses.forEach((h, idx) => {
+          const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+          html += `
+            <div class="member-item">
+              <span>${medal} ${h.name} (${h.membersCount} st)</span>
+              <span>✨ ${h.totalXp} XP</span>
+            </div>
+          `;
+        });
+        html += '</div>';
+        content.innerHTML = html;
       }
-      html += '</div>';
-      content.innerHTML = html;
-    }
-
-    async function loadGlobalLeaderboard() {
-      const content = document.getElementById('global-content');
-      
-      const { data: topProfiles } = await db.from('profiles')
-        .select('full_name, level, xp')
-        .order('xp', { ascending: false })
-        .limit(10);
-
-      if (!topProfiles || topProfiles.length === 0) {
-        content.innerHTML = '<p style="font-size:12px; color:#aaa;">Ingen global data tillgänglig.</p>';
-        return;
-      }
-
-      let html = '<div>';
-      topProfiles.forEach((p, idx) => {
-        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
-        html += `
-          <div class="member-item">
-            <span>${medal} ${p.full_name || 'Anonym'}</span>
-            <span>⭐ Lvl ${p.level || 1} (${p.xp || 0} XP)</span>
-          </div>
-        `;
-      });
-      html += '</div>';
-      content.innerHTML = html;
     }
 
     async function createHouse() {
@@ -203,7 +283,7 @@
 
       const { error } = await db.rpc('create_household', { h_name: name });
       if (error) alert('Fel: ' + error.message);
-      else loadHousehold(currentUser.id);
+      else renderLeaderboard();
     }
 
     async function joinHouse() {
@@ -213,7 +293,7 @@
 
       const { error } = await db.rpc('join_household', { p_code: code });
       if (error) alert('Fel: ' + error.message);
-      else loadHousehold(currentUser.id);
+      else renderLeaderboard();
     }
 
     async function loadHabits(userId) {
@@ -279,8 +359,7 @@
         document.getElementById('user-coins').innerText = data.coins;
         document.getElementById('user-streak').innerText = data.streak;
         loadHabits(currentUser.id);
-        loadHousehold(currentUser.id);
-        loadGlobalLeaderboard();
+        renderLeaderboard();
       }
     }
 
@@ -289,9 +368,8 @@
       
       if (session) {
         currentUser = session.user;
-        document.getElementById('login-btn').style.display = 'none';
-        document.getElementById('status-text').style.display = 'none';
-        document.getElementById('profile').style.display = 'block';
+        document.getElementById('login-card').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
 
         const { data: profile } = await db.from('profiles').select('full_name, xp, level, coins, streak_count, role').eq('id', session.user.id).single();
 
@@ -306,8 +384,7 @@
           }
         }
 
-        loadHousehold(session.user.id);
-        loadGlobalLeaderboard();
+        renderLeaderboard();
         loadHabits(session.user.id);
       }
     }
