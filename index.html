@@ -333,9 +333,9 @@
       const monthKey = '2026-08';
       const { data: mapData } = await db.from('active_map').select('*').eq('month_key', monthKey).single();
 
-      if (mapData) {
-        const img = document.getElementById('active-map-img');
-        img.src = mapData.image_url;
+      const img = document.getElementById('active-map-img');
+
+      if (mapData && mapData.image_url) {
         currentMapNodes = mapData.nodes_json || [];
 
         img.onload = () => {
@@ -343,6 +343,16 @@
           renderCloudieOnNode(userNode);
           resetMapView();
         };
+
+        img.onerror = () => {
+          renderNodesOnMap();
+          renderCloudieOnNode(userNode);
+          resetMapView();
+        };
+
+        img.src = mapData.image_url;
+      } else {
+        img.style.display = 'none';
       }
     }
 
