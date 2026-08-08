@@ -49,12 +49,21 @@
       
       <!-- Publicera Quests -->
       <div class="admin-card" id="quest-form-card">
-        <h2>📢 Skapa & Publicera Global Utmaning</h2>
+        <h2>📢 Skapa & Publicera Utmaning</h2>
         <form id="publish-quest-form">
-          <div class="form-group">
-            <label>Titel / Beskrivning:</label>
-            <input type="text" id="quest-title" placeholder="t.ex. Spring 5km eller Besegra Veckans Boss" required>
+          <div class="form-row">
+            <div class="form-group" style="flex: 2;">
+              <label>Titel / Beskrivning:</label>
+              <input type="text" id="quest-title" placeholder="t.ex. Spring 5km eller Diska berget" required>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label>Mottagare:</label>
+              <select id="quest-target">
+                <option value="all">🌍 Alla Användare</option>
+              </select>
+            </div>
           </div>
+
           <div class="form-row">
             <div class="form-group" style="flex: 1;">
               <label>Typ:</label>
@@ -73,7 +82,7 @@
               <input type="number" id="quest-coins" value="10" required>
             </div>
           </div>
-          <button type="submit">Spara i Pool & Publicera till alla 🚀</button>
+          <button type="submit">Spara & Publicera Utmaning 🚀</button>
         </form>
       </div>
 
@@ -151,18 +160,23 @@
       const type = document.getElementById('quest-type').value;
       const xp = parseInt(document.getElementById('quest-xp').value);
       const coins = parseInt(document.getElementById('quest-coins').value);
+      const targetVal = document.getElementById('quest-target').value;
+
+      const targetUserId = targetVal === 'all' ? null : targetVal;
 
       const { error } = await db.rpc('publish_global_quest', {
         quest_title: title,
         xp_val: xp,
         coin_val: coins,
-        type_val: type
+        type_val: type,
+        target_user_id: targetUserId
       });
 
       if (error) {
         alert('Fel vid publicering: ' + error.message);
       } else {
-        alert(`Utmaningen "${title}" har sparats i Quest Pool och publicerats till alla!`);
+        const targetText = targetVal === 'all' ? 'alla användare' : 'den valda spelaren';
+        alert(`Utmaningen "${title}" har skickats till ${targetText}!`);
         document.getElementById('quest-title').value = '';
         loadQuestPool();
       }
@@ -173,8 +187,6 @@
       document.getElementById('quest-type').value = type;
       document.getElementById('quest-xp').value = xp;
       document.getElementById('quest-coins').value = coins;
-
-      // Scrolla upp till formuläret mjukt
       document.getElementById('quest-form-card').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -191,8 +203,6 @@
       quests.forEach(q => {
         const tr = document.createElement('tr');
         const dateStr = new Date(q.created_at).toLocaleDateString('sv-SE');
-        
-        // Escape strängar för att undvika problem med citationstecken i titeln
         const safeTitle = q.title.replace(/'/g, "\\'");
 
         tr.innerHTML = `
@@ -216,14 +226,23 @@
       const tbody = document.getElementById('user-table-body');
       tbody.innerHTML = '';
 
+      const targetSelect = document.getElementById('quest-target');
+      targetSelect.innerHTML = '<option value="all">🌍 Alla Användare</option>';
+
       if (!profiles || profiles.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6">Inga användare hittades.</td></tr>';
         return;
       }
 
       profiles.forEach(p => {
+        // Fyll i rullgardinsmenyn med enskilda användare
+        const option = document.createElement('option');
+        option.value = p.id;
+        option.innerText = `👤 ${p.full_name || 'Anonym'} (${p.role})`;
+        targetSelect.appendChild(option);
+
+        // Fyll i användartabellen
         const completedCount = logs ? logs.filter(log => log.user_id === p.id).length : 0;
-        
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong>${p.full_name || 'Anonym'}</strong></td>
