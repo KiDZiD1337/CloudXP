@@ -380,7 +380,7 @@
     async function loadCrmData() {
       const { data: profiles } = await db.from('profiles').select('*');
       const { data: households } = await db.from('households').select('*');
-      const { data: members } = await db.from('household_members').select('household_id, user_id, profiles(xp, coins)');
+      const { data: members } = await db.from('household_members').select('household_id, user_id');
       const { data: logs } = await db.from('habit_logs').select('user_id');
 
       // 1. Fyll i Hushållstabellen med både total XP och totala Coins
@@ -393,8 +393,18 @@
         households.forEach(h => {
           const houseMembers = members ? members.filter(m => m.household_id === h.id) : [];
           const memberCount = houseMembers.length;
-          const totalXp = houseMembers.reduce((sum, m) => sum + (m.profiles?.xp || 0), 0);
-          const totalCoins = houseMembers.reduce((sum, m) => sum + (m.profiles?.coins || 0), 0);
+          
+          let totalXp = 0;
+          let totalCoins = 0;
+
+          houseMembers.forEach(m => {
+            const userProfile = profiles ? profiles.find(p => p.id === m.user_id) : null;
+            if (userProfile) {
+              totalXp += (userProfile.xp || 0);
+              totalCoins += (userProfile.coins || 0);
+            }
+          });
+
           const dateStr = new Date(h.created_at).toLocaleDateString('sv-SE');
 
           const tr = document.createElement('tr');
