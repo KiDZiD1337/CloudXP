@@ -12,7 +12,15 @@
     h1 { margin: 0; }
     .back-btn { background: #333; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; }
     .back-btn:hover { background: #444; }
-    table { width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 8px; overflow: hidden; margin-top: 1rem; }
+    
+    .admin-card { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+    .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1rem; text-align: left; }
+    .form-row { display: flex; gap: 1rem; }
+    input, select { padding: 10px; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: white; font-size: 14px; }
+    button { background-color: #7b1fa2; color: white; border: none; padding: 10px 18px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+    button:hover { background-color: #6a1b9a; }
+
+    table { width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 8px; overflow: hidden; }
     th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #2a2a2a; }
     th { background: #2a2a2a; font-weight: 600; color: #aaa; }
     tr:hover { background: #252525; }
@@ -34,6 +42,38 @@
     </div>
 
     <div id="admin-content" style="display: none;">
+      
+      <!-- Publicera Quests -->
+      <div class="admin-card">
+        <h2>📢 Publicera Ny Global Utmaning</h2>
+        <form id="publish-quest-form">
+          <div class="form-group">
+            <label>Titel / Beskrivning:</label>
+            <input type="text" id="quest-title" placeholder="t.ex. Spring 5km eller Besegra Veckans Boss" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+              <label>Typ:</label>
+              <select id="quest-type">
+                <option value="daily">Daily (Daglig)</option>
+                <option value="weekly">Weekly (Veckovis / Mellanboss)</option>
+                <option value="monthly">Monthly (Månadsboss)</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label>XP Belöning:</label>
+              <input type="number" id="quest-xp" value="20" required>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label>Coin Belöning:</label>
+              <input type="number" id="quest-coins" value="10" required>
+            </div>
+          </div>
+          <button type="submit">Publicera till alla användare 🚀</button>
+        </form>
+      </div>
+
+      <!-- Användaröversikt -->
       <h2>Användaröversikt</h2>
       <table>
         <thead>
@@ -42,11 +82,12 @@
             <th>Roll</th>
             <th>Nivå (Level)</th>
             <th>Total XP</th>
+            <th>Coins</th>
             <th>Slutförda vanor</th>
           </tr>
         </thead>
         <tbody id="user-table-body">
-          <tr><td colspan="5">Laddar användare...</td></tr>
+          <tr><td colspan="6">Laddar användare...</td></tr>
         </tbody>
       </table>
     </div>
@@ -65,7 +106,6 @@
         return;
       }
 
-      // Kontrollera om inloggad användare är admin
       const { data: profile } = await db
         .from('profiles')
         .select('role')
@@ -81,30 +121,52 @@
       loadCrmData();
     }
 
+    // Formulär för att publicera uppdrag till alla
+    document.getElementById('publish-quest-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const title = document.getElementById('quest-title').value.trim();
+      const type = document.getElementById('quest-type').value;
+      const xp = parseInt(document.getElementById('quest-xp').value);
+      const coins = parseInt(document.getElementById('quest-coins').value);
+
+      const { error } = await db.rpc('publish_global_quest', {
+        quest_title: title,
+        xp_val: xp,
+        coin_val: coins,
+        type_val: type
+      });
+
+      if (error) {
+        alert('Fel vid publicering: ' + error.message);
+      } else {
+        alert(`Utmaningen "${title}" har publicerats till alla användare!`);
+        document.getElementById('quest-title').value = '';
+      }
+    });
+
     async function loadCrmData() {
-      // Hämtar alla profiler
       const { data: profiles } = await db.from('profiles').select('*');
-      // Hämtar alla loggar för att räkna aktivitet
       const { data: logs } = await db.from('habit_logs').select('user_id');
 
       const tbody = document.getElementById('user-table-body');
       tbody.innerHTML = '';
 
       if (!profiles || profiles.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5">Inga användare hittades.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6">Inga användare hittades.</td></tr>';
         return;
       }
 
       profiles.forEach(p => {
-        // Räkna antal utförda vanor per användare
         const completedCount = logs ? logs.filter(log => log.user_id === p.id).length : 0;
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong>${p.full_name || 'Anonym'}</strong></td>
           <td><span class="badge ${p.role === 'admin' ? '' : 'badge-user'}">${p.role || 'user'}</span></td>
-          <td>Level ${p.level}</td>
-          <td>${p.xp} XP</td>
+          <td>Level ${p.level || 1}</td>
+          <td>${p.xp || 0} XP</td>
+          <td>💰 ${p.coins || 0}</td>
           <td>${completedCount} st</td>
         `;
         tbody.appendChild(tr);
