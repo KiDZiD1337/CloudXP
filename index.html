@@ -224,7 +224,7 @@
             div.innerHTML = `
               <span>${habit.title} (+${habit.xp_reward} XP / +${habit.coin_reward} 💰)</span>
               ${isDoneToday 
-                ? `<button class="complete-btn disabled-btn" disabled>Klar för idag! ✅</button>`
+                ? `<button class="complete-btn disabled-btn" disabled>✅</button>`
                 : `<button class="complete-btn" onclick="claimRewards('${habit.id}')">Klar!</button>`
               }
             `;
