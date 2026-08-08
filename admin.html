@@ -20,7 +20,7 @@
     button { background-color: #7b1fa2; color: white; border: none; padding: 10px 18px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; }
     button:hover { background-color: #6a1b9a; }
 
-    /* Kontextuellt Sökfält & Dropdown */
+    /* Kontextuellt Sökfält */
     .search-results-dropdown {
       position: absolute;
       top: 100%;
@@ -69,6 +69,7 @@
     .badge { background: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
     .badge-user { background: #1565c0; }
     .badge-type { background: #4a148c; font-size: 11px; text-transform: uppercase; }
+    .badge-house { background: #e65100; font-size: 12px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -96,7 +97,6 @@
               <input type="text" id="quest-title" placeholder="t.ex. Spring 5km eller Diska berget i köket" required>
             </div>
             
-            <!-- Kontextuellt Sökfält -->
             <div class="form-group" style="flex: 1;">
               <label>Mottagare (Sök Spelare eller Hushåll):</label>
               <input type="text" id="target-search-input" placeholder="🌍 Alla (Sök för att begränsa...)" autocomplete="off">
@@ -152,8 +152,25 @@
         </tbody>
       </table>
 
+      <!-- Hushållsöversikt -->
+      <h2>🏠 Aktiva Hushåll & Hem</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Hemmets Namn</th>
+            <th>Inbjudningskod</th>
+            <th>Medlemmar</th>
+            <th>Total Hem-XP</th>
+            <th>Skapat Datum</th>
+          </tr>
+        </thead>
+        <tbody id="household-table-body">
+          <tr><td colspan="5">Laddar hushåll...</td></tr>
+        </tbody>
+      </table>
+
       <!-- Användaröversikt -->
-      <h2>Användaröversikt</h2>
+      <h2>👤 Enskilda Användare</h2>
       <table>
         <thead>
           <tr>
@@ -204,7 +221,6 @@
       setupContextualSearch();
     }
 
-    // Kontextuell söklogik (Debounced)
     function setupContextualSearch() {
       const input = document.getElementById('target-search-input');
       const resultsDiv = document.getElementById('search-results');
@@ -219,7 +235,6 @@
         }
 
         searchDebounce = setTimeout(async () => {
-          // Sök parallellt i användare och hushåll
           const { data: users } = await db.from('profiles').select('id, full_name, role').ilike('full_name', `%${query}%`).limit(5);
           const { data: houses } = await db.from('households').select('id, name, invite_code').ilike('name', `%${query}%`).limit(5);
 
@@ -256,7 +271,6 @@
         }, 300);
       });
 
-      // Dölj dropdown om man klickar utanför
       document.addEventListener('click', (e) => {
         if (!input.contains(e.target) && !resultsDiv.contains(e.target)) {
           resultsDiv.style.display = 'none';
@@ -364,12 +378,42 @@
 
     async function loadCrmData() {
       const { data: profiles } = await db.from('profiles').select('*');
+      const { data: households } = await db.from('households').select('*');
+      const { data: members } = await db.from('household_members').select('household_id, user_id, profiles(xp)');
       const { data: logs } = await db.from('habit_logs').select('user_id');
 
-      const tbody = document.getElementById('user-table-body');
-      tbody.innerHTML = '';
+      // 1. Fyll i Hushållstabellen
+      const houseTbody = document.getElementById('household-table-body');
+      houseTbody.innerHTML = '';
 
-      if (profiles && profiles.length > 0) {
+      if (!households || households.length === 0) {
+        houseTbody.innerHTML = '<tr><td colspan="5">Inga registrerade hushåll ännu.</td></tr>';
+      } else {
+        households.forEach(h => {
+          const houseMembers = members ? members.filter(m => m.household_id === h.id) : [];
+          const memberCount = houseMembers.length;
+          const totalXp = houseMembers.reduce((sum, m) => sum + (m.profiles?.xp || 0), 0);
+          const dateStr = new Date(h.created_at).toLocaleDateString('sv-SE');
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${h.name}</strong></td>
+            <td><span class="badge badge-house">${h.invite_code}</span></td>
+            <td>${memberCount} st medlem(mar)</td>
+            <td>✨ ${totalXp} XP</td>
+            <td>${dateStr}</td>
+          `;
+          houseTbody.appendChild(tr);
+        });
+      }
+
+      // 2. Fyll i Användartabellen
+      const userTbody = document.getElementById('user-table-body');
+      userTbody.innerHTML = '';
+
+      if (!profiles || profiles.length === 0) {
+        userTbody.innerHTML = '<tr><td colspan="6">Inga användare hittades.</td></tr>';
+      } else {
         profiles.forEach(p => {
           const completedCount = logs ? logs.filter(log => log.user_id === p.id).length : 0;
           const tr = document.createElement('tr');
@@ -381,7 +425,7 @@
             <td>💰 ${p.coins || 0}</td>
             <td>${completedCount} st</td>
           `;
-          tbody.appendChild(tr);
+          userTbody.appendChild(tr);
         });
       }
     }
