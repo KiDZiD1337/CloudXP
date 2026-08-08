@@ -54,12 +54,12 @@
           <div class="form-row">
             <div class="form-group" style="flex: 2;">
               <label>Titel / Beskrivning:</label>
-              <input type="text" id="quest-title" placeholder="t.ex. Spring 5km eller Diska berget" required>
+              <input type="text" id="quest-title" placeholder="t.ex. Spring 5km eller Diska berget i köket" required>
             </div>
             <div class="form-group" style="flex: 1;">
               <label>Mottagare:</label>
               <select id="quest-target">
-                <option value="all">🌍 Alla Användare</option>
+                <option value="all">🌍 Alla Användare (Globalt)</option>
               </select>
             </div>
           </div>
@@ -162,21 +162,29 @@
       const coins = parseInt(document.getElementById('quest-coins').value);
       const targetVal = document.getElementById('quest-target').value;
 
-      const targetUserId = targetVal === 'all' ? null : targetVal;
+      let targetUserId = null;
+      let targetHouseholdId = null;
+
+      if (targetVal.startsWith('user_')) {
+        targetUserId = targetVal.replace('user_', '');
+      } else if (targetVal.startsWith('house_')) {
+        targetHouseholdId = targetVal.replace('house_', '');
+      }
 
       const { error } = await db.rpc('publish_global_quest', {
         quest_title: title,
         xp_val: xp,
         coin_val: coins,
         type_val: type,
-        target_user_id: targetUserId
+        is_core_val: false,
+        target_user_id: targetUserId,
+        target_household_id: targetHouseholdId
       });
 
       if (error) {
         alert('Fel vid publicering: ' + error.message);
       } else {
-        const targetText = targetVal === 'all' ? 'alla användare' : 'den valda spelaren';
-        alert(`Utmaningen "${title}" har skickats till ${targetText}!`);
+        alert(`Utmaningen "${title}" har publicerats!`);
         document.getElementById('quest-title').value = '';
         loadQuestPool();
       }
@@ -221,39 +229,53 @@
 
     async function loadCrmData() {
       const { data: profiles } = await db.from('profiles').select('*');
+      const { data: households } = await db.from('households').select('*');
       const { data: logs } = await db.from('habit_logs').select('user_id');
 
       const tbody = document.getElementById('user-table-body');
       tbody.innerHTML = '';
 
       const targetSelect = document.getElementById('quest-target');
-      targetSelect.innerHTML = '<option value="all">🌍 Alla Användare</option>';
+      targetSelect.innerHTML = '<option value="all">🌍 Alla Användare (Globalt)</option>';
 
-      if (!profiles || profiles.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6">Inga användare hittades.</td></tr>';
-        return;
+      // Fyll på med hushåll i rullgardinen
+      if (households && households.length > 0) {
+        const houseOptGroup = document.createElement('optgroup');
+        houseOptGroup.label = '🏠 Hushåll / Grupper';
+        households.forEach(h => {
+          const opt = document.createElement('option');
+          opt.value = `house_${h.id}`;
+          opt.innerText = `🏠 Hem: ${h.name} (${h.invite_code})`;
+          houseOptGroup.appendChild(opt);
+        });
+        targetSelect.appendChild(houseOptGroup);
       }
 
-      profiles.forEach(p => {
-        // Fyll i rullgardinsmenyn med enskilda användare
-        const option = document.createElement('option');
-        option.value = p.id;
-        option.innerText = `👤 ${p.full_name || 'Anonym'} (${p.role})`;
-        targetSelect.appendChild(option);
+      // Fyll på med enskilda användare i rullgardinen
+      if (profiles && profiles.length > 0) {
+        const userOptGroup = document.createElement('optgroup');
+        userOptGroup.label = '👤 Enskilda Spelare';
+        profiles.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = `user_${p.id}`;
+          opt.innerText = `👤 Spelare: ${p.full_name || 'Anonym'} (${p.role})`;
+          userOptGroup.appendChild(opt);
 
-        // Fyll i användartabellen
-        const completedCount = logs ? logs.filter(log => log.user_id === p.id).length : 0;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${p.full_name || 'Anonym'}</strong></td>
-          <td><span class="badge ${p.role === 'admin' ? '' : 'badge-user'}">${p.role || 'user'}</span></td>
-          <td>Level ${p.level || 1}</td>
-          <td>${p.xp || 0} XP</td>
-          <td>💰 ${p.coins || 0}</td>
-          <td>${completedCount} st</td>
-        `;
-        tbody.appendChild(tr);
-      });
+          // Fyll i användartabellen nedanför
+          const completedCount = logs ? logs.filter(log => log.user_id === p.id).length : 0;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${p.full_name || 'Anonym'}</strong></td>
+            <td><span class="badge ${p.role === 'admin' ? '' : 'badge-user'}">${p.role || 'user'}</span></td>
+            <td>Level ${p.level || 1}</td>
+            <td>${p.xp || 0} XP</td>
+            <td>💰 ${p.coins || 0}</td>
+            <td>${completedCount} st</td>
+          `;
+          tbody.appendChild(tr);
+        });
+        targetSelect.appendChild(userOptGroup);
+      }
     }
 
     initAdmin();
