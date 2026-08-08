@@ -17,6 +17,8 @@
     .complete-btn:hover { background-color: #1b5e20; }
     .add-habit-form { display: flex; gap: 8px; margin-top: 1rem; }
     .add-habit-form input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: white; }
+    .admin-btn { display: none; background-color: #7b1fa2; margin-top: 1rem; width: 100%; }
+    .admin-btn:hover { background-color: #6a1b9a; }
   </style>
 </head>
 <body>
@@ -40,7 +42,8 @@
         <div id="habits-container">Laddar vanor...</div>
       </div>
 
-      <button id="logout-btn" style="background-color: #e53935; margin-top: 2rem;">Logga ut</button>
+      <button id="admin-link-btn" class="admin-btn" onclick="window.location.href='admin.html'">⚙️ Admin Panel</button>
+      <button id="logout-btn" style="background-color: #e53935; margin-top: 1.5rem;">Logga ut</button>
     </div>
   </div>
 
@@ -105,10 +108,7 @@
       document.getElementById('user-xp').innerText = currentXp;
       document.getElementById('user-level').innerText = newLevel;
 
-      // Uppdatera profilens XP/Level
       await db.from('profiles').update({ xp: currentXp, level: newLevel }).eq('id', currentUser.id);
-
-      // Logga utförandet i historiktabellen
       await db.from('habit_logs').insert({ user_id: currentUser.id, habit_id: habitId });
     }
 
@@ -121,13 +121,17 @@
         document.getElementById('status-text').style.display = 'none';
         document.getElementById('profile').style.display = 'block';
 
-        const { data: profile } = await db.from('profiles').select('full_name, xp, level').eq('id', session.user.id).single();
+        const { data: profile } = await db.from('profiles').select('full_name, xp, level, role').eq('id', session.user.id).single();
 
         if (profile) {
           currentXp = profile.xp;
           document.getElementById('user-name').innerText = 'Hej ' + profile.full_name + '!';
           document.getElementById('user-xp').innerText = profile.xp;
           document.getElementById('user-level').innerText = profile.level;
+
+          if (profile.role === 'admin') {
+            document.getElementById('admin-link-btn').style.display = 'block';
+          }
         }
 
         loadHabits(session.user.id);
