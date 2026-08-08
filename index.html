@@ -3,14 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gamified Habits</title>
+  <title>CloudXP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-    .card { background: #1e1e1e; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); text-align: center; max-width: 400px; width: 90%; }
-    button { background-color: #4285F4; color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 1rem; }
+    .card { background: #1e1e1e; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); text-align: center; max-width: 450px; width: 100%; }
+    button { background-color: #4285F4; color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
     button:hover { background-color: #357ae8; }
     .profile-info { display: none; }
+    .habit-list { text-align: left; margin-top: 1.5rem; }
+    .habit-item { background: #2a2a2a; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .complete-btn { background-color: #2e7d32; font-size: 14px; padding: 6px 12px; margin-top: 0; }
+    .complete-btn:hover { background-color: #1b5e20; }
   </style>
 </head>
 <body>
@@ -23,7 +27,13 @@
     <div id="profile" class="profile-info">
       <h2 id="user-name">Välkommen!</h2>
       <p>XP: <span id="user-xp">0</span> | Level: <span id="user-level">1</span></p>
-      <button id="logout-btn" style="background-color: #e53935;">Logga ut</button>
+      
+      <div class="habit-list">
+        <h3>Mina Vanor</h3>
+        <div id="habits-container">Laddar vanor...</div>
+      </div>
+
+      <button id="logout-btn" style="background-color: #e53935; margin-top: 2rem;">Logga ut</button>
     </div>
   </div>
 
@@ -32,13 +42,13 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_ASdxmwP7tzMXRtprVoaM2w_1maNYHQG'; 
 
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let currentUser = null;
+    let currentXp = 0;
 
     document.getElementById('login-btn').addEventListener('click', async () => {
       const { error } = await db.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: window.location.origin
-        }
+        options: { redirectTo: window.location.origin }
       });
       if (error) alert('Fel: ' + error.message);
     });
@@ -48,26 +58,56 @@
       window.location.reload();
     });
 
+    async function loadHabits(userId) {
+      const { data: habits } = await db.from('habits').select('*').eq('user_id', userId);
+      const container = document.getElementById('habits-container');
+      
+      if (!habits || habits.length === 0) {
+        container.innerHTML = '<p>Inga vanor hittades.</p>';
+        return;
+      }
+
+      container.innerHTML = '';
+      habits.forEach(habit => {
+        const div = document.createElement('div');
+        div.className = 'habit-item';
+        div.innerHTML = `
+          <span>${habit.title} (+${habit.xp_reward} XP)</span>
+          <button class="complete-btn" onclick="claimXp(${habit.xp_reward})">Klar!</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function claimXp(amount) {
+      currentXp += amount;
+      const newLevel = Math.floor(currentXp / 100) + 1;
+
+      document.getElementById('user-xp').innerText = currentXp;
+      document.getElementById('user-level').innerText = newLevel;
+
+      await db.from('profiles').update({ xp: currentXp, level: newLevel }).eq('id', currentUser.id);
+    }
+
     async function checkUser() {
       const { data: { session } } = await db.auth.getSession();
       
       if (session) {
+        currentUser = session.user;
         document.getElementById('login-btn').style.display = 'none';
         document.getElementById('status-text').style.display = 'none';
         document.getElementById('profile').style.display = 'block';
 
-        // Hämtar XP och Level från din profiles-tabell i databasen
-        const { data: profile } = await db
-          .from('profiles')
-          .select('full_name, xp, level')
-          .eq('id', session.user.id)
-          .single();
+        const { data: profile } = await db.from('profiles').select('full_name, xp, level').eq('id', session.user.id).single();
 
         if (profile) {
+          currentXp = profile.xp;
           document.getElementById('user-name').innerText = 'Hej ' + profile.full_name + '!';
           document.getElementById('user-xp').innerText = profile.xp;
           document.getElementById('user-level').innerText = profile.level;
         }
+
+        loadHabits(session.user.id);
       }
     }
 
