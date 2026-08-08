@@ -9,16 +9,23 @@
     * { box-sizing: border-box; }
     body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 0; min-height: 100vh; overflow: hidden; }
     
-    /* Login-vy centrering */
+    /* Login-vy */
     .login-container { text-align: center; background: #1e1e1e; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); max-width: 400px; width: 90%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; }
 
-    /* Kartyta (Fullskärm bakgrund) */
-    .map-viewport { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #000; }
-    .map-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-    .map-image { width: 100%; height: 100%; object-fit: cover; display: block; }
+    /* Kartbox (Interaktiv Pan & Zoom Viewport) */
+    .map-viewport { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; overflow: hidden; background: #0a0a0a; cursor: grab; }
+    .map-viewport:active { cursor: grabbing; }
 
-    /* Cloudie Marker på kartan */
-    .cloudie-marker { position: absolute; width: 36px; height: 36px; background: #ff9800; border: 3px solid #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; transform: translate(-50%, -100%); box-shadow: 0 4px 10px rgba(0,0,0,0.8); transition: all 0.5s ease-in-out; z-index: 5; animation: bounce 1.5s infinite alternate; }
+    .map-container { position: absolute; top: 0; left: 0; transform-origin: 0 0; transition: transform 0.05s ease-out; }
+    .map-image { display: block; max-width: none; user-select: none; pointer-events: none; }
+
+    /* Zoom Knappar på Kartan */
+    .map-controls { position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; gap: 8px; background: rgba(30,30,30,0.85); padding: 6px 12px; border-radius: 20px; backdrop-filter: blur(4px); border: 1px solid #444; }
+    .map-controls button { background: #333; color: white; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+    .map-controls button:hover { background: #444; }
+
+    /* Cloudie Marker */
+    .cloudie-marker { position: absolute; width: 36px; height: 36px; background: #ff9800; border: 3px solid #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; transform: translate(-50%, -100%); box-shadow: 0 4px 10px rgba(0,0,0,0.8); z-index: 5; animation: bounce 1.5s infinite alternate; pointer-events: none; }
     .cloudie-name { position: absolute; top: -20px; background: rgba(0,0,0,0.8); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; white-space: nowrap; }
 
     @keyframes bounce {
@@ -26,7 +33,7 @@
       100% { transform: translate(-50%, -115%); }
     }
 
-    /* Moduler ovanpå kartan */
+    /* Flytande Moduler */
     .viewport-overlay { display: none; width: 100vw; height: 100vh; position: relative; z-index: 2; pointer-events: none; }
     .card { background: rgba(30, 30, 30, 0.92); backdrop-filter: blur(8px); padding: 1.2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.7); border: 1px solid #333; pointer-events: auto; }
 
@@ -38,13 +45,13 @@
 
     @media (max-width: 820px) {
       body { overflow-y: auto; }
-      .map-viewport { position: relative; height: 350px; }
+      .map-viewport { position: relative; height: 400px; }
       .viewport-overlay { display: flex; flex-direction: column; gap: 1rem; position: static; padding: 1rem; height: auto; pointer-events: auto; }
       .profile-widget, .leaderboard-widget { position: static; width: 100%; max-height: none; }
     }
 
-    button { background-color: #4285F4; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
-    button:hover { background-color: #357ae8; }
+    button.primary-btn { background-color: #4285F4; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
+    button.primary-btn:hover { background-color: #357ae8; }
     
     .stats-bar { display: flex; justify-content: space-around; background: #2a2a2a; padding: 10px; border-radius: 8px; margin-top: 0.8rem; font-weight: bold; font-size: 13px; text-align: center; }
     
@@ -69,12 +76,12 @@
     .habit-list { margin-top: 1rem; }
     .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #ff9800; margin-top: 1rem; margin-bottom: 0.4rem; font-weight: bold; }
     .habit-item { background: #2a2a2a; padding: 10px; border-radius: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-    .complete-btn { background-color: #2e7d32; font-size: 11px; padding: 5px 10px; }
+    .complete-btn { background-color: #2e7d32; font-size: 11px; padding: 5px 10px; border: none; color: white; border-radius: 4px; cursor: pointer; }
     .complete-btn:hover { background-color: #1b5e20; }
     .disabled-btn { background-color: #444; color: #888; cursor: not-allowed; }
     .disabled-btn:hover { background-color: #444; }
     
-    .admin-btn { display: none; background-color: #7b1fa2; margin-top: 1rem; width: 100%; }
+    .admin-btn { display: none; background-color: #7b1fa2; margin-top: 1rem; width: 100%; border: none; color: white; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     .admin-btn:hover { background-color: #6a1b9a; }
   </style>
 </head>
@@ -84,14 +91,21 @@
   <div id="login-card" class="login-container">
     <h1>CloudXP 🎮</h1>
     <p>Logga in för att påbörja ditt äventyr.</p>
-    <button id="login-btn">Logga in med Google</button>
+    <button id="login-btn" class="primary-btn">Logga in med Google</button>
   </div>
 
-  <!-- Kartyta (Bakgrund) -->
+  <!-- Kartyta med Interaktiv Pan & Zoom -->
   <div id="map-viewport" class="map-viewport" style="display: none;">
     <div class="map-container" id="map-container">
       <img id="active-map-img" class="map-image" src="" alt="Månadens Karta">
       <div id="cloudie-overlay"></div>
+    </div>
+    
+    <!-- Zoom-kontroller -->
+    <div class="map-controls">
+      <button onclick="zoomMap(0.15)">＋</button>
+      <button onclick="zoomMap(-0.15)">－</button>
+      <button onclick="resetMapView()">🎯</button>
     </div>
   </div>
 
@@ -123,7 +137,7 @@
       </div>
 
       <button id="admin-link-btn" class="admin-btn" onclick="window.location.href='admin.html'">⚙️ Admin Panel</button>
-      <button id="logout-btn" style="background-color: #e53935; margin-top: 1rem; width: 100%;">Logga ut</button>
+      <button id="logout-btn" style="background-color: #e53935; margin-top: 1rem; width: 100%; border: none; color: white; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">Logga ut</button>
     </div>
 
     <!-- Leaderboard -->
@@ -155,6 +169,13 @@
     let activeTab = 'house';
     let currentMapNodes = [];
 
+    // Zoom & Pan variabler
+    let scale = 0.8;
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let startX, startY;
+
     document.getElementById('login-btn').addEventListener('click', async () => {
       const { error } = await db.auth.signInWithOAuth({
         provider: 'google',
@@ -167,6 +188,51 @@
       await db.auth.signOut();
       window.location.reload();
     });
+
+    // Pan & Zoom Logik
+    function initMapPanZoom() {
+      const viewport = document.getElementById('map-viewport');
+      const container = document.getElementById('map-container');
+
+      viewport.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.card') || e.target.closest('.map-controls')) return;
+        isDragging = true;
+        startX = e.clientX - panX;
+        startY = e.clientY - panY;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        panX = e.clientX - startX;
+        panY = e.clientY - startY;
+        applyTransform();
+      });
+
+      window.addEventListener('mouseup', () => { isDragging = false; });
+
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.08 : -0.08;
+        zoomMap(delta);
+      }, { passive: false });
+    }
+
+    function zoomMap(amount) {
+      scale = Math.min(Math.max(0.4, scale + amount), 2.5);
+      applyTransform();
+    }
+
+    function resetMapView() {
+      scale = 0.8;
+      panX = (window.innerWidth - 1200 * scale) / 2;
+      panY = (window.innerHeight - 800 * scale) / 2;
+      applyTransform();
+    }
+
+    function applyTransform() {
+      const container = document.getElementById('map-container');
+      container.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    }
 
     function updateXpBar(xp, level) {
       const currentLevelBaseXp = (level - 1) * 100;
@@ -186,9 +252,14 @@
       const { data: mapData } = await db.from('active_map').select('*').eq('month_key', monthKey).single();
 
       if (mapData) {
-        document.getElementById('active-map-img').src = mapData.image_url;
+        const img = document.getElementById('active-map-img');
+        img.src = mapData.image_url;
         currentMapNodes = mapData.nodes_json || [];
-        renderCloudieOnNode(userNode);
+
+        img.onload = () => {
+          renderCloudieOnNode(userNode);
+          resetMapView();
+        };
       }
     }
 
@@ -421,8 +492,10 @@
       if (session) {
         currentUser = session.user;
         document.getElementById('login-card').style.display = 'none';
-        document.getElementById('map-viewport').style.display = 'flex';
+        document.getElementById('map-viewport').style.display = 'block';
         document.getElementById('dashboard').style.display = 'block';
+
+        initMapPanZoom();
 
         const { data: profile } = await db.from('profiles').select('full_name, xp, level, coins, streak_count, map_node, role').eq('id', session.user.id).single();
 
