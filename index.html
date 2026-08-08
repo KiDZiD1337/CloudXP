@@ -7,19 +7,27 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 1rem; }
-    .card { background: #1e1e1e; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); text-align: center; max-width: 450px; width: 100%; box-sizing: border-box; }
+    .card { background: #1e1e1e; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); text-align: center; max-width: 480px; width: 100%; box-sizing: border-box; }
     button { background-color: #4285F4; color: white; border: none; padding: 10px 18px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
     button:hover { background-color: #357ae8; }
     .profile-info { display: none; }
+    
     .stats-bar { display: flex; justify-content: space-around; background: #2a2a2a; padding: 12px; border-radius: 8px; margin-top: 1rem; font-weight: bold; font-size: 14px; }
+    
+    .xp-progress-container { margin-top: 1rem; text-align: left; }
+    .xp-text { font-size: 12px; color: #aaa; margin-bottom: 4px; display: flex; justify-content: space-between; }
+    .xp-bar-bg { background: #2a2a2a; height: 10px; border-radius: 5px; overflow: hidden; width: 100%; }
+    .xp-bar-fill { background: linear-gradient(90deg, #ff9800, #ffeb3b); height: 100%; width: 0%; transition: width 0.4s ease; }
+
     .habit-list { text-align: left; margin-top: 1.5rem; }
-    .section-title { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-top: 1rem; margin-bottom: 0.5rem; }
+    .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #ff9800; margin-top: 1.2rem; margin-bottom: 0.5rem; font-weight: bold; }
     .habit-item { background: #2a2a2a; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
     .complete-btn { background-color: #2e7d32; font-size: 13px; padding: 6px 12px; }
     .complete-btn:hover { background-color: #1b5e20; }
     .disabled-btn { background-color: #444; color: #888; cursor: not-allowed; }
     .disabled-btn:hover { background-color: #444; }
-    .admin-btn { display: none; background-color: #7b1fa2; margin-top: 1rem; width: 100%; }
+    
+    .admin-btn { display: none; background-color: #7b1fa2; margin-top: 1.5rem; width: 100%; }
     .admin-btn:hover { background-color: #6a1b9a; }
   </style>
 </head>
@@ -35,12 +43,21 @@
       
       <div class="stats-bar">
         <span>⭐ Lvl <span id="user-level">1</span></span>
-        <span>✨ <span id="user-xp">0</span> XP</span>
+        <span>🔥 <span id="user-streak">0</span> Dagar</span>
         <span>💰 <span id="user-coins">0</span> Coins</span>
       </div>
 
+      <div class="xp-progress-container">
+        <div class="xp-text">
+          <span>Progress till Lvl <span id="next-level">2</span></span>
+          <span><span id="user-xp">0</span> / <span id="target-xp">100</span> XP</span>
+        </div>
+        <div class="xp-bar-bg">
+          <div id="xp-fill" class="xp-bar-fill"></div>
+        </div>
+      </div>
+
       <div class="habit-list">
-        <h3>Säsongens Utmaningar</h3>
         <div id="habits-container">Laddar utmaningar...</div>
       </div>
 
@@ -55,8 +72,6 @@
 
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
-    let currentXp = 0;
-    let currentCoins = 0;
 
     document.getElementById('login-btn').addEventListener('click', async () => {
       const { error } = await db.auth.signInWithOAuth({
@@ -71,8 +86,21 @@
       window.location.reload();
     });
 
+    function updateXpBar(xp, level) {
+      const currentLevelBaseXp = (level - 1) * 100;
+      const nextLevelXp = level * 100;
+      const xpInCurrentLevel = xp - currentLevelBaseXp;
+      const percentage = Math.min(100, Math.max(0, (xpInCurrentLevel / 100) * 100));
+
+      document.getElementById('user-xp').innerText = xp;
+      document.getElementById('user-level').innerText = level;
+      document.getElementById('next-level').innerText = level + 1;
+      document.getElementById('target-xp').innerText = nextLevelXp;
+      document.getElementById('xp-fill').style.width = percentage + '%';
+    }
+
     async function loadHabits(userId) {
-      const { data: habits } = await db.from('habits').select('*').eq('user_id', userId);
+      const { data: habits, error } = await db.rpc('get_user_quests', { p_user_id: userId });
       
       const todayStart = new Date();
       todayStart.setHours(0,0,0,0);
@@ -92,18 +120,22 @@
 
       container.innerHTML = '';
 
-      const categories = ['daily', 'weekly', 'monthly'];
-      const labels = { daily: '📅 Daily Tasks', weekly: '⚔️ Weekly Bosses', monthly: '👑 Monthly Final Boss' };
+      const sections = [
+        { key: 'core', label: '📌 Dagliga Rutiner (Core)', filter: h => h.is_core && h.quest_type === 'daily' },
+        { key: 'side', label: '🎲 Dagens Side Quests (Random)', filter: h => !h.is_core && h.quest_type === 'daily' },
+        { key: 'weekly', label: '⚔️ Veckoboss (Weekly)', filter: h => h.quest_type === 'weekly' },
+        { key: 'monthly', label: '👑 Månadsboss (Monthly)', filter: h => h.quest_type === 'monthly' }
+      ];
 
-      categories.forEach(cat => {
-        const catHabits = habits.filter(h => (h.quest_type || 'daily') === cat);
-        if (catHabits.length > 0) {
-          const catTitle = document.createElement('div');
-          catTitle.className = 'section-title';
-          catTitle.innerText = labels[cat];
-          container.appendChild(catTitle);
+      sections.forEach(sec => {
+        const secHabits = habits.filter(sec.filter);
+        if (secHabits.length > 0) {
+          const titleDiv = document.createElement('div');
+          titleDiv.className = 'section-title';
+          titleDiv.innerText = sec.label;
+          container.appendChild(titleDiv);
 
-          catHabits.forEach(habit => {
+          secHabits.forEach(habit => {
             const isDoneToday = completedHabitIds.has(habit.id);
             const div = document.createElement('div');
             div.className = 'habit-item';
@@ -111,7 +143,7 @@
               <span>${habit.title} (+${habit.xp_reward} XP / +${habit.coin_reward} 💰)</span>
               ${isDoneToday 
                 ? `<button class="complete-btn disabled-btn" disabled>Klaridag! ✅</button>`
-                : `<button class="complete-btn" onclick="claimRewards('${habit.id}', ${habit.xp_reward}, ${habit.coin_reward})">Klar!</button>`
+                : `<button class="complete-btn" onclick="claimRewards('${habit.id}')">Klar!</button>`
               }
             `;
             container.appendChild(div);
@@ -120,19 +152,17 @@
       });
     }
 
-    async function claimRewards(habitId, xpAmount, coinAmount) {
-      currentXp += xpAmount;
-      currentCoins += coinAmount;
-      const newLevel = Math.floor(currentXp / 100) + 1;
+    async function claimRewards(habitId) {
+      const { data, error } = await db.rpc('claim_quest_reward', { p_habit_id: habitId });
 
-      document.getElementById('user-xp').innerText = currentXp;
-      document.getElementById('user-coins').innerText = currentCoins;
-      document.getElementById('user-level').innerText = newLevel;
-
-      await db.from('profiles').update({ xp: currentXp, coins: currentCoins, level: newLevel }).eq('id', currentUser.id);
-      await db.from('habit_logs').insert({ user_id: currentUser.id, habit_id: habitId });
-
-      loadHabits(currentUser.id);
+      if (error) {
+        alert('Fel: ' + error.message);
+      } else {
+        updateXpBar(data.xp, data.level);
+        document.getElementById('user-coins').innerText = data.coins;
+        document.getElementById('user-streak').innerText = data.streak;
+        loadHabits(currentUser.id);
+      }
     }
 
     async function checkUser() {
@@ -144,15 +174,13 @@
         document.getElementById('status-text').style.display = 'none';
         document.getElementById('profile').style.display = 'block';
 
-        const { data: profile } = await db.from('profiles').select('full_name, xp, level, coins, role').eq('id', session.user.id).single();
+        const { data: profile } = await db.from('profiles').select('full_name, xp, level, coins, streak_count, role').eq('id', session.user.id).single();
 
         if (profile) {
-          currentXp = profile.xp || 0;
-          currentCoins = profile.coins || 0;
           document.getElementById('user-name').innerText = 'Hej ' + profile.full_name + '!';
-          document.getElementById('user-xp').innerText = currentXp;
-          document.getElementById('user-coins').innerText = currentCoins;
-          document.getElementById('user-level').innerText = profile.level || 1;
+          document.getElementById('user-coins').innerText = profile.coins || 0;
+          document.getElementById('user-streak').innerText = profile.streak_count || 0;
+          updateXpBar(profile.xp || 0, profile.level || 1);
 
           if (profile.role === 'admin') {
             document.getElementById('admin-link-btn').style.display = 'block';
