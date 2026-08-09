@@ -56,6 +56,14 @@
     .modal-card p { font-size: 14px; color: #ccc; margin-bottom: 1.5rem; }
     .modal-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
+    /* BOSS BATTLE STYLING */
+    .boss-battle-card { background: #1a0033; border: 2px solid #9c27b0; max-width: 500px; width: 92%; }
+    .hp-bar-outer { background: #333; height: 16px; border-radius: 8px; overflow: hidden; border: 1px solid #555; margin-top: 4px; }
+    .hp-bar-inner { height: 100%; transition: width 0.3s ease; }
+    .hp-player { background: #4caf50; }
+    .hp-boss { background: #f44336; }
+    .battle-log { background: #0d001a; border: 1px solid #4a148c; height: 100px; overflow-y: auto; border-radius: 6px; padding: 8px; font-size: 11px; text-align: left; color: #e1bee7; margin: 1rem 0; font-family: monospace; }
+
     @media (max-width: 820px) {
       body { overflow-y: auto; }
       .map-viewport { position: relative; height: 60vh; width: 100vw; }
@@ -67,6 +75,8 @@
     button.primary-btn:hover { background-color: #357ae8; }
     button.danger-btn { background-color: #d32f2f; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; }
     button.danger-btn:hover { background-color: #b71c1c; }
+    button.success-btn { background-color: #2e7d32; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+    button.success-btn:hover { background-color: #1b5e20; }
     
     .stats-bar { display: flex; justify-content: space-around; background: #2a2a2a; padding: 10px; border-radius: 8px; margin-top: 0.8rem; font-weight: bold; font-size: 13px; text-align: center; }
     
@@ -125,11 +135,53 @@
     </div>
   </div>
 
+  <!-- Standard Nod Modal -->
   <div id="node-modal" class="modal-overlay">
     <div class="modal-card">
       <h3 id="modal-title">Nod 1</h3>
       <p id="modal-desc">Beskrivning...</p>
       <div id="modal-actions" class="modal-actions"></div>
+    </div>
+  </div>
+
+  <!-- Boss Battle Mini-spels Modal -->
+  <div id="boss-modal" class="modal-overlay">
+    <div class="modal-card boss-battle-card">
+      <h2 id="boss-name-display" style="color: #ba68c8; margin: 0 0 10px 0;">👑 Månadsbossen</h2>
+      
+      <!-- Boss HP -->
+      <div style="margin-bottom: 12px; text-align: left;">
+        <div style="display: flex; justify-span: space-between; font-size: 12px;">
+          <span>👹 Boss HP</span>
+          <span id="boss-hp-text">100 / 100</span>
+        </div>
+        <div class="hp-bar-outer">
+          <div id="boss-hp-bar" class="hp-bar-inner hp-boss" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- Spelar HP -->
+      <div style="margin-bottom: 12px; text-align: left;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px;">
+          <span>☁️ Din HP</span>
+          <span id="player-hp-text">80 / 80</span>
+        </div>
+        <div class="hp-bar-outer">
+          <div id="player-hp-bar" class="hp-bar-inner hp-player" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- Strid logg -->
+      <div id="battle-log" class="battle-log">
+        > Du kliver in i stridsarena! Bossen ryter!<br>
+      </div>
+
+      <!-- Handlingar -->
+      <div id="boss-actions" class="modal-actions">
+        <button class="danger-btn" onclick="executePlayerAttack()">⚔️ Attackera</button>
+        <button class="success-btn" onclick="executeUseItem()">🧪 Använd Pryl</button>
+        <button style="background: #555; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer;" onclick="fleeBossBattle()">🏃 Fly</button>
+      </div>
     </div>
   </div>
 
@@ -197,6 +249,14 @@
     let currentMapNodes = [];
     
     let allCoreDailiesDone = false;
+
+    // Boss Battle State Variables
+    let currentBossNode = null;
+    let bossMaxHp = 100;
+    let bossCurrentHp = 100;
+    let bossDamage = 15;
+    let playerMaxHp = 80;
+    let playerCurrentHp = 80;
 
     let scale = 1;
     let minScale = 1;
@@ -482,12 +542,11 @@
       title.innerText = `📍 Nod ${node.node} (${nodeTypeLabel})`;
       actions.innerHTML = '';
 
-      // Om klickad nod är en Boss-nod (oavsett om man står där eller vill flytta dit)
       if (node.type === 'boss') {
         const canReach = userXp >= (node.required_xp || 0);
 
         if (canReach) {
-          desc.innerText = `⚔️ Du står inför Månadsbossen på Nod ${node.node}! Är du redo att strida? Om du förlorar skickas du tillbaka till Nod 1 för att träna mer!`;
+          desc.innerText = `⚔️ Du står inför ${node.boss_name || 'Månadsbossen'}! Är du redo för strid? Om du förlorar skickas du tillbaka till Nod 1 för att träna mer!`;
           
           const fightBtn = document.createElement('button');
           fightBtn.className = 'danger-btn';
@@ -496,14 +555,14 @@
             if (userNode !== node.node) {
               await moveToNode(node.node, false);
             }
-            challengeBoss();
+            modal.style.display = 'none';
+            startBossBattle(node);
           };
           actions.appendChild(fightBtn);
         } else {
           desc.innerText = `🔒 Du kan inte utmana Bossen ännu! Kräver ${node.required_xp || 0} XP (du har ${userXp} XP).`;
         }
       } 
-      // Vanliga noder där spelaren inte står än
       else if (userNode !== node.node) {
         const canReach = userXp >= (node.required_xp || 0);
 
@@ -519,7 +578,6 @@
           desc.innerText = `🔒 Du kan inte flytta hit ännu. Nod ${node.node} kräver ${node.required_xp || 0} XP (du har ${userXp} XP).`;
         }
       } 
-      // Vanliga noder där spelaren redan står
       else {
         if (node.type === 'shop') {
           desc.innerText = `Välkommen till butiken! Här kan du köpa "${node.shop_item_name || 'Okänd pryl'}" för ${node.shop_item_cost || 100} Coins.`;
@@ -582,20 +640,122 @@
       modal.style.display = 'flex';
     }
 
-    async function challengeBoss() {
-      const modal = document.getElementById('node-modal');
-      const inventory = currentUserProfile ? (currentUserProfile.inventory || []) : [];
-      const userLevel = currentUserProfile ? currentUserProfile.level : 1;
+    /* ==========================================
+       INTERAKTIV BOSS BATTLE MOTOR
+       ========================================== */
+    function startBossBattle(node) {
+      currentBossNode = node;
+      bossMaxHp = node.boss_hp || 100;
+      bossCurrentHp = bossMaxHp;
+      bossDamage = node.boss_damage || 15;
 
-      const hasRequiredItem = inventory.includes('Slottets Nyckel') || inventory.includes('Magisk Dryck');
+      const userLvl = currentUserProfile ? currentUserProfile.level : 1;
+      const userStreak = currentUserProfile ? currentUserProfile.streak_count : 0;
       
-      if (userLevel >= 5 || hasRequiredItem) {
-        alert('🎉 GRATTIS! Du besegrade Månadsbossen och har slutfört månadens äventyr!');
-        modal.style.display = 'none';
-      } else {
-        alert('💥 Bossen var för stark! Du förlorade striden och kastas tillbaka till startpunkten på Nod 1.');
-        await resetToNodeOne();
+      playerMaxHp = 50 + (userLvl * 10) + (userStreak * 5);
+      playerCurrentHp = playerMaxHp;
+
+      document.getElementById('boss-name-display').innerText = `👑 ${node.boss_name || 'Månadsbossen'}`;
+      document.getElementById('battle-log').innerHTML = `> Striden har börjat mot ${node.boss_name || 'Månadsbossen'}!<br>`;
+
+      updateBattleHpUi();
+      document.getElementById('boss-modal').style.display = 'flex';
+    }
+
+    function updateBattleHpUi() {
+      const bossPct = Math.max(0, Math.min(100, (bossCurrentHp / bossMaxHp) * 100));
+      const playerPct = Math.max(0, Math.min(100, (playerCurrentHp / playerMaxHp) * 100));
+
+      document.getElementById('boss-hp-text').innerText = `${bossCurrentHp} / ${bossMaxHp}`;
+      document.getElementById('boss-hp-bar').style.width = `${bossPct}%`;
+
+      document.getElementById('player-hp-text').innerText = `${playerCurrentHp} / ${playerMaxHp}`;
+      document.getElementById('player-hp-bar').style.width = `${playerPct}%`;
+    }
+
+    function logBattleMessage(msg) {
+      const log = document.getElementById('battle-log');
+      log.innerHTML += `> ${msg}<br>`;
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function executePlayerAttack() {
+      const userLvl = currentUserProfile ? currentUserProfile.level : 1;
+      const baseDmg = 15 + (userLvl * 5);
+      const randomDmg = Math.floor(Math.random() * 8) + baseDmg;
+
+      bossCurrentHp = Math.max(0, bossCurrentHp - randomDmg);
+      logBattleMessage(`Du anfaller och gör <b style="color:#aed581;">${randomDmg} skada</b>!`);
+      updateBattleHpUi();
+
+      if (bossCurrentHp <= 0) {
+        logBattleMessage(`<b style="color:#ffeb3b;">🎉 SEGER! Du har besegrat bossen!</b>`);
+        setTimeout(() => {
+          alert('🎉 GRATTIS! Du besegrade Månadsbossen och belönas med +50 Coins och +100 XP!');
+          claimBossVictoryRewards();
+        }, 600);
+        return;
       }
+
+      setTimeout(() => {
+        const bossDmgRoll = Math.floor(Math.random() * 5) + bossDamage;
+        playerCurrentHp = Math.max(0, playerCurrentHp - bossDmgRoll);
+        logBattleMessage(`Bossen slår tillbaka och gör <b style="color:#ff8a80;">${bossDmgRoll} skada</b> på dig!`);
+        updateBattleHpUi();
+
+        if (playerCurrentHp <= 0) {
+          logBattleMessage(`<b style="color:#f44336;">💀 Du blev besegrad...</b>`);
+          setTimeout(async () => {
+            alert('💥 Du förlorade striden! Din avatar skickas tillbaka till startpunkten på Nod 1.');
+            document.getElementById('boss-modal').style.display = 'none';
+            await resetToNodeOne();
+          }, 600);
+        }
+      }, 500);
+    }
+
+    async function executeUseItem() {
+      const inventory = currentUserProfile ? (currentUserProfile.inventory || []) : [];
+      const itemIdx = inventory.indexOf('Magisk Dryck');
+
+      if (itemIdx === -1) {
+        logBattleMessage(`<span style="color:#aaa;">Du har ingen "Magisk Dryck" i ditt inventarie!</span>`);
+        return;
+      }
+
+      inventory.splice(itemIdx, 1);
+      currentUserProfile.inventory = inventory;
+
+      const healAmt = 40;
+      playerCurrentHp = Math.min(playerMaxHp, playerCurrentHp + healAmt);
+      logBattleMessage(`🧪 Du dricker en Magisk Dryck och återställer <b style="color:#81c784;">${healAmt} HP</b>!`);
+      updateBattleHpUi();
+
+      renderInventory(inventory);
+      await db.from('profiles').update({ inventory }).eq('id', currentUser.id);
+    }
+
+    function fleeBossBattle() {
+      logBattleMessage(`🏃 Du flydde från striden.`);
+      setTimeout(() => {
+        document.getElementById('boss-modal').style.display = 'none';
+      }, 300);
+    }
+
+    async function claimBossVictoryRewards() {
+      const newCoins = (currentUserProfile.coins || 0) + 50;
+      const newXp = (currentUserProfile.xp || 0) + 100;
+      const newLevel = Math.floor(newXp / 100) + 1;
+
+      currentUserProfile.coins = newCoins;
+      currentUserProfile.xp = newXp;
+      currentUserProfile.level = newLevel;
+
+      await db.from('profiles').update({ coins: newCoins, xp: newXp, level: newLevel }).eq('id', currentUser.id);
+
+      document.getElementById('user-coins').innerText = newCoins;
+      updateXpBar(newXp, newLevel);
+      document.getElementById('boss-modal').style.display = 'none';
     }
 
     async function resetToNodeOne() {
