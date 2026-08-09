@@ -99,7 +99,7 @@
 
         <div id="mapping-area" style="display: none; margin-top: 1rem;">
           <p style="font-size: 13px; color: #aaa; margin-bottom: 8px;">
-            Klicka på kartan för att skapa en nod. Klicka på en befintlig nod-pin för att redigera typ, event, förgreningar och butiksvaror.
+            Klicka på kartan för att skapa en nod. Klicka på en befintlig nod-pin för att redigera typ, event, förgreningar, butiksvaror och boss-stats.
           </p>
           
           <div class="map-mapper-container" id="map-container" onclick="handleMapClick(event)">
@@ -144,6 +144,22 @@
               <div class="form-group" style="flex: 1;">
                 <label>Välj Pryl att sälja i Shopen:</label>
                 <select id="editor-shop-item-select"></select>
+              </div>
+            </div>
+
+            <!-- Fält för Boss Battle -->
+            <div id="boss-fields" class="form-row" style="display: none;">
+              <div class="form-group" style="flex: 2;">
+                <label>Bossens Namn:</label>
+                <input type="text" id="editor-boss-name" placeholder="t.ex. Vanedemonen">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label>Boss Max HP:</label>
+                <input type="number" id="editor-boss-hp" value="100">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label>Boss Attack (DMG):</label>
+                <input type="number" id="editor-boss-damage" value="15">
               </div>
             </div>
 
@@ -477,6 +493,10 @@
       document.getElementById('editor-required-item-select').value = n.required_item || '';
       document.getElementById('editor-shop-item-select').value = n.shop_item_name || '';
 
+      document.getElementById('editor-boss-name').value = n.boss_name || 'Månadsbossen';
+      document.getElementById('editor-boss-hp').value = n.boss_hp || 100;
+      document.getElementById('editor-boss-damage').value = n.boss_damage || 15;
+
       updateEditorFields();
       document.getElementById('node-editor-card').style.display = 'block';
     }
@@ -485,6 +505,7 @@
       const type = document.getElementById('editor-node-type').value;
       document.getElementById('gate-fields').style.display = type === 'gate' ? 'flex' : 'none';
       document.getElementById('shop-fields').style.display = type === 'shop' ? 'flex' : 'none';
+      document.getElementById('boss-fields').style.display = type === 'boss' ? 'flex' : 'none';
     }
 
     function saveSelectedNodeChanges() {
@@ -508,6 +529,10 @@
 
         mapNodes[selectedNodeIndex].shop_item_name = selectedItemName;
         mapNodes[selectedNodeIndex].shop_item_cost = itemData ? itemData.cost : 100;
+      } else if (type === 'boss') {
+        mapNodes[selectedNodeIndex].boss_name = document.getElementById('editor-boss-name').value.trim() || 'Månadsbossen';
+        mapNodes[selectedNodeIndex].boss_hp = parseInt(document.getElementById('editor-boss-hp').value) || 100;
+        mapNodes[selectedNodeIndex].boss_damage = parseInt(document.getElementById('editor-boss-damage').value) || 15;
       }
 
       renderNodesOverlay();
