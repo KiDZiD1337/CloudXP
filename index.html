@@ -104,7 +104,12 @@
     .select-btn { background: #2a2a2a; border: 1px solid #444; color: white; padding: 8px 4px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; }
     .select-btn.active { border-color: #ff9800; background: #4a148c; }
     .stats-preview { background: #121212; padding: 8px; border-radius: 6px; text-align: left; font-size: 11px; margin-bottom: 0.8rem; border: 1px solid #333; }
-    .attribute-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; font-size: 11px; background: #121212; padding: 8px; border-radius: 6px; border: 1px solid #333; }
+    
+    .attribute-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 8px; font-size: 11px; background: #121212; padding: 8px; border-radius: 6px; border: 1px solid #333; }
+    .stat-row { display: flex; justify-content: space-between; align-items: center; background: #1e1e1e; padding: 4px 8px; border-radius: 4px; }
+    .add-stat-btn { background: #388e3c; color: white; border: none; border-radius: 3px; font-weight: bold; font-size: 11px; padding: 1px 6px; cursor: pointer; }
+    .add-stat-btn:hover { background: #2e7d32; }
+
     .habit-picker-box { text-align: left; background: #121212; padding: 10px; border-radius: 6px; border: 1px solid #333; margin-bottom: 1rem; max-height: 120px; overflow-y: auto; }
     .habit-picker-item { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 4px 0; border-bottom: 1px solid #222; }
 
@@ -360,14 +365,38 @@
         </div>
       </div>
 
-      <!-- ATTRIBUTE GRID DISPLAY -->
-      <div class="attribute-grid">
-        <span>💪 STR: <b id="stat-str">10</b></span>
-        <span>🎯 DEX: <b id="stat-dex">10</b></span>
-        <span>🔮 INT: <b id="stat-int">10</b></span>
-        <span>🧠 WIS: <b id="stat-wis">10</b></span>
-        <span>🛡️ CON: <b id="stat-con">10</b></span>
-        <span>⚡ AGI: <b id="stat-agi">10</b></span>
+      <!-- ATTRIBUTE GRID DISPLAY WITH STAT POINTS ASSIGNMENT -->
+      <div style="margin-top: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+          <span style="color: #aaa;">📊 Attributes:</span>
+          <span id="stat-points-display" style="color: #ff9800; font-weight: bold;">Unspent Points: 0</span>
+        </div>
+        <div class="attribute-grid">
+          <div class="stat-row">
+            <span>💪 STR: <b id="stat-str">10</b></span>
+            <button class="add-stat-btn" id="btn-add-str" style="display:none;" onclick="allocatePoint('str')">＋</button>
+          </div>
+          <div class="stat-row">
+            <span>🎯 DEX: <b id="stat-dex">10</b></span>
+            <button class="add-stat-btn" id="btn-add-dex" style="display:none;" onclick="allocatePoint('dex')">＋</button>
+          </div>
+          <div class="stat-row">
+            <span>🔮 INT: <b id="stat-int">10</b></span>
+            <button class="add-stat-btn" id="btn-add-int" style="display:none;" onclick="allocatePoint('int')">＋</button>
+          </div>
+          <div class="stat-row">
+            <span>🧠 WIS: <b id="stat-wis">10</b></span>
+            <button class="add-stat-btn" id="btn-add-wis" style="display:none;" onclick="allocatePoint('wis')">＋</button>
+          </div>
+          <div class="stat-row">
+            <span>🛡️ CON: <b id="stat-con">10</b></span>
+            <button class="add-stat-btn" id="btn-add-con" style="display:none;" onclick="allocatePoint('con')">＋</button>
+          </div>
+          <div class="stat-row">
+            <span>⚡ AGI: <b id="stat-agi">10</b></span>
+            <button class="add-stat-btn" id="btn-add-agi" style="display:none;" onclick="allocatePoint('agi')">＋</button>
+          </div>
+        </div>
       </div>
 
       <div style="margin-top: 10px;">
@@ -634,12 +663,10 @@
     function calculateStats(race, className) {
       let stats = { str: 10, dex: 10, int: 10, wis: 10, con: 10, agi: 10 };
 
-      // Race Modifiers
       if (race === 'Nimbus') { stats.agi += 4; stats.dex += 2; }
       else if (race === 'Stratus') { stats.int += 4; stats.wis += 2; }
       else if (race === 'Cumulus') { stats.con += 4; stats.str += 2; }
 
-      // Class Modifiers
       if (className === 'Warrior') { stats.str += 6; stats.con += 4; }
       else if (className === 'Ranger') { stats.dex += 6; stats.agi += 4; }
       else if (className === 'Mage') { stats.int += 8; stats.wis += 4; stats.con -= 2; }
@@ -691,7 +718,6 @@
         return;
       }
 
-      // Assign selected Core Habits into the user's habits table
       const habitsToInsert = selectedHabitIds.map(habitId => {
         const questData = coreHabitsPool.find(q => q.id === habitId);
         return {
@@ -731,11 +757,37 @@
       document.getElementById('stat-con').innerText = p.con || 10;
       document.getElementById('stat-agi').innerText = p.agi || 10;
 
-      // Render Avatar in Profile Card
+      const points = p.stat_points || 0;
+      document.getElementById('stat-points-display').innerText = `Unspent Points: ${points}`;
+
+      const addBtns = ['str', 'dex', 'int', 'wis', 'con', 'agi'];
+      addBtns.forEach(s => {
+        const btn = document.getElementById(`btn-add-${s}`);
+        if (btn) btn.style.display = points > 0 ? 'inline-block' : 'none';
+      });
+
       document.getElementById('profile-avatar-icon').innerHTML = renderCloudieSVG(p.avatar_config, 45);
 
       updateXpBar(p.xp || 0, p.level || 1);
       renderInventory(p.inventory || []);
+    }
+
+    async function allocatePoint(statName) {
+      const { data, error } = await db.rpc('allocate_stat_point', { p_stat: statName });
+
+      if (error) {
+        alert('Could not allocate point: ' + error.message);
+      } else {
+        currentUserProfile.str = data.str;
+        currentUserProfile.dex = data.dex;
+        currentUserProfile.int_stat = data.int;
+        currentUserProfile.wis = data.wis;
+        currentUserProfile.con = data.con;
+        currentUserProfile.agi = data.agi;
+        currentUserProfile.stat_points = data.stat_points;
+
+        renderProfileUi();
+      }
     }
 
     function initMapPanZoom() {
@@ -1625,9 +1677,11 @@
         currentUserProfile.xp = data.xp;
         currentUserProfile.coins = data.coins;
         currentUserProfile.level = data.level;
+        currentUserProfile.stat_points = data.stat_points;
         currentUserProfile.current_month_xp = data.month_xp;
         currentUserProfile.inventory = data.inventory;
 
+        renderProfileUi();
         renderInventory(data.inventory);
         loadHabits(currentUser.id);
         renderLeaderboard();
@@ -1664,6 +1718,7 @@
             map_node: 1,
             inventory: [],
             role: userRole,
+            stat_points: 0,
             avatar_config: selectedAvatarConfig
           };
 
