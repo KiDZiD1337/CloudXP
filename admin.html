@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,7 +20,7 @@
     button { background-color: #7b1fa2; color: white; border: none; padding: 10px 18px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; }
     button:hover { background-color: #6a1b9a; }
 
-    /* Kontextuellt Sökfält */
+    /* Contextual Search Dropdown */
     .search-results-dropdown {
       position: absolute;
       top: 100%;
@@ -40,7 +40,7 @@
     .target-chip { display: inline-flex; align-items: center; gap: 8px; background: #4a148c; color: white; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; width: fit-content; margin-top: 4px; }
     .target-chip span { cursor: pointer; font-size: 14px; color: #ff8a80; }
 
-    /* Nod-Karterare */
+    /* Node Mapper */
     .map-mapper-container { position: relative; display: inline-block; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid #444; margin-top: 1rem; cursor: crosshair; }
     .map-mapper-container img { width: 100%; display: block; }
     .node-pin { position: absolute; width: 26px; height: 26px; background: #ff9800; color: black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid white; transform: translate(-50%, -50%); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.8); z-index: 10; }
@@ -49,7 +49,7 @@
     .node-pin.type-gate { background: #c62828; color: white; }
     .node-pin.type-boss { background: #9c27b0; color: white; border-color: #ffeb3b; }
 
-    /* Modal / Konfigurationspanel för valda noder */
+    /* Node Editor Modal */
     .node-editor { background: #2a2a2a; padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px solid #444; }
 
     .action-btn { background-color: #2e7d32; font-size: 12px; padding: 6px 10px; border-radius: 4px; }
@@ -70,88 +70,88 @@
   <div class="container">
     <header>
       <h1>Admin CRM 📊</h1>
-      <a href="index.html" class="back-btn">← Tillbaka till appen</a>
+      <a href="index.html" class="back-btn">← Back to App</a>
     </header>
 
     <div id="access-denied" style="display: none; color: #e53935;">
-      <h2>Åtkomst nekad</h2>
-      <p>Du har inte administratörsrättigheter för att se denna sida.</p>
+      <h2>Access Denied</h2>
+      <p>You do not have administrative privileges to view this page.</p>
     </div>
 
     <div id="admin-content" style="display: none;">
       
-      <!-- Nod-Karterare för Månadens Karta -->
+      <!-- Map & Node Mapper -->
       <div class="admin-card">
-        <h2>🗺️ Hantera Månadens Karta & Events (Shops, Gates, Branch & Boss)</h2>
+        <h2>🗺️ Manage Monthly Map & Node Events (Shops, Gates, Branches & Bosses)</h2>
         <div class="form-row">
           <div class="form-group" style="flex: 1;">
-            <label>Månadsnyckel (ÅÅÅÅ-MM):</label>
+            <label>Month Key (YYYY-MM):</label>
             <input type="text" id="map-month-key" value="2026-08" required>
           </div>
           <div class="form-group" style="flex: 3;">
-            <label>Bild-URL från Supabase Storage:</label>
-            <input type="text" id="map-image-url" placeholder="Klistra in länk från 'maps' bucketen..." required>
+            <label>Image URL from Supabase Storage:</label>
+            <input type="text" id="map-image-url" placeholder="Paste link from 'maps' bucket..." required>
           </div>
           <div class="form-group" style="flex: 1; justify-content: flex-end;">
-            <button type="button" onclick="loadMapForMapping()" style="background:#1565c0;">Ladda Karta 🖼️</button>
+            <button type="button" onclick="loadMapForMapping()" style="background:#1565c0;">Load Map 🖼️</button>
           </div>
         </div>
 
         <div id="mapping-area" style="display: none; margin-top: 1rem;">
           <p style="font-size: 13px; color: #aaa; margin-bottom: 8px;">
-            Klicka på kartan för att skapa en nod. Klicka på en befintlig nod-pin för att redigera typ, event, förgreningar, butiksvaror och boss-stats.
+            Click on the map to create a node. Click an existing node pin to edit type, event, branching, shop items, or boss stats.
           </p>
           
           <div class="map-mapper-container" id="map-container" onclick="handleMapClick(event)">
-            <img id="map-preview" src="" alt="Månadens karta">
+            <img id="map-preview" src="" alt="Monthly Map">
             <div id="nodes-overlay"></div>
           </div>
 
-          <!-- Redigera Vald Nod -->
+          <!-- Selected Node Editor -->
           <div id="node-editor-card" class="node-editor" style="display: none;">
-            <h3>⚙️ Konfigurera Nod <span id="editor-node-id">1</span></h3>
+            <h3>⚙️ Configure Node <span id="editor-node-id">1</span></h3>
             <div class="form-row">
               <div class="form-group" style="flex: 1;">
-                <label>Nod-typ / Event:</label>
+                <label>Node Type / Event:</label>
                 <select id="editor-node-type" onchange="updateEditorFields()">
-                  <option value="standard">🟡 Standard Nod (XP-Milstolpe)</option>
-                  <option value="branch">🔀 Vägskäl (Grenar ut till flera noder)</option>
-                  <option value="shop">🛒 Shop / Butik (Event)</option>
-                  <option value="gate">🔒 Låst Port (Kräver Item / Nyckel)</option>
-                  <option value="boss">👑 Boss Battle (Månadsboss / Event)</option>
+                  <option value="standard">🟡 Standard Node (XP Milestone)</option>
+                  <option value="branch">🔀 Fork / Branch (Split paths to multiple nodes)</option>
+                  <option value="shop">🛒 Shop / Store Event</option>
+                  <option value="gate">🔒 Locked Gate (Requires Item / Key)</option>
+                  <option value="boss">👑 Boss Battle (Monthly Boss Event)</option>
                 </select>
               </div>
               <div class="form-group" style="flex: 1;">
-                <label>Koppla till Nästa Nod(er):</label>
-                <input type="text" id="editor-next-nodes" placeholder="t.ex. 2 eller vid vägskäl 4,12">
+                <label>Connect to Next Node(s):</label>
+                <input type="text" id="editor-next-nodes" placeholder="e.g. 2 or for branches 4,12">
               </div>
               <div class="form-group" style="flex: 1;">
-                <label>Mål Månads-XP:</label>
+                <label>Required Monthly XP:</label>
                 <input type="number" id="editor-required-xp" value="50">
               </div>
             </div>
 
-            <!-- Fält för Låst Port / Item -->
+            <!-- Gate Fields -->
             <div id="gate-fields" class="form-row" style="display: none;">
               <div class="form-group" style="flex: 1;">
-                <label>Välj Föremål ur Item Poolen:</label>
+                <label>Select Required Item from Pool:</label>
                 <select id="editor-required-item-select"></select>
               </div>
             </div>
 
-            <!-- Fält för Shop -->
+            <!-- Shop Fields -->
             <div id="shop-fields" class="form-row" style="display: none;">
               <div class="form-group" style="flex: 1;">
-                <label>Välj Pryl att sälja i Shopen:</label>
+                <label>Select Item to Sell in Shop:</label>
                 <select id="editor-shop-item-select"></select>
               </div>
             </div>
 
-            <!-- Fält för Boss Battle -->
+            <!-- Boss Battle Fields -->
             <div id="boss-fields" class="form-row" style="display: none;">
               <div class="form-group" style="flex: 2;">
-                <label>Bossens Namn:</label>
-                <input type="text" id="editor-boss-name" placeholder="t.ex. Vanedemonen">
+                <label>Boss Name:</label>
+                <input type="text" id="editor-boss-name" placeholder="e.g. Habit Demon">
               </div>
               <div class="form-group" style="flex: 1;">
                 <label>Boss Max HP:</label>
@@ -163,40 +163,40 @@
               </div>
             </div>
 
-            <button type="button" onclick="saveSelectedNodeChanges()" style="background:#2e7d32;">Spara Nodinställningar ⚙️</button>
+            <button type="button" onclick="saveSelectedNodeChanges()" style="background:#2e7d32;">Save Node Settings ⚙️</button>
           </div>
 
           <div style="margin-top: 1rem; display: flex; gap: 10px;">
-            <button type="button" onclick="undoLastNode()" style="background:#c62828;">Ångra Sista Nod ↩️</button>
-            <button type="button" onclick="clearAllNodes()" style="background:#d32f2f;">Rensa Alla 🗑️</button>
-            <button type="button" onclick="saveActiveMap()" style="background:#2e7d32; margin-left: auto;">Spara Karta & Noder 💾</button>
+            <button type="button" onclick="undoLastNode()" style="background:#c62828;">Undo Last Node ↩️</button>
+            <button type="button" onclick="clearAllNodes()" style="background:#d32f2f;">Clear All 🗑️</button>
+            <button type="button" onclick="saveActiveMap()" style="background:#2e7d32; margin-left: auto;">Save Map & Nodes 💾</button>
           </div>
         </div>
       </div>
 
-      <!-- Skapa & Hantera Item Pool -->
+      <!-- Item Pool Catalog -->
       <div class="admin-card">
-        <h2>🎒 Central Item Pool (Katalog för Prylar, Gear & Nycklar)</h2>
+        <h2>🎒 Central Item Pool (Catalog for Gear, Keys & Consumables)</h2>
         <form id="create-item-form">
           <div class="form-row">
             <div class="form-group" style="flex: 1;">
-              <label>Ikon (Emoji):</label>
+              <label>Icon (Emoji):</label>
               <input type="text" id="item-icon" value="🔑" required>
             </div>
             <div class="form-group" style="flex: 2;">
-              <label>Prylens Namn:</label>
-              <input type="text" id="item-name" placeholder="t.ex. Gammal Nyckel" required>
+              <label>Item Name:</label>
+              <input type="text" id="item-name" placeholder="e.g. Old Key" required>
             </div>
             <div class="form-group" style="flex: 1;">
-              <label>Typ:</label>
+              <label>Type:</label>
               <select id="item-type">
-                <option value="key">Nyckel / Access</option>
-                <option value="gear">Gear / Kosmetiskt</option>
-                <option value="consumable">Engångsartikel</option>
+                <option value="key">Key / Access</option>
+                <option value="gear">Gear / Weapon</option>
+                <option value="consumable">Consumable / Potion</option>
               </select>
             </div>
             <div class="form-group" style="flex: 1;">
-              <label>Standardpris (Coins):</label>
+              <label>Default Price (Coins):</label>
               <input type="number" id="item-cost" value="50" required>
             </div>
             <div class="form-group" style="flex: 1;">
@@ -205,49 +205,49 @@
             </div>
           </div>
           <div class="form-group">
-            <label>Beskrivning:</label>
-            <input type="text" id="item-desc" placeholder="t.ex. Låser upp vägen till den hemliga byn.">
+            <label>Description:</label>
+            <input type="text" id="item-desc" placeholder="e.g. Unlocks the gate to the secret village.">
           </div>
-          <button type="submit" style="background-color: #e65100;">Skapa Pryl i Katalogen 🎁</button>
+          <button type="submit" style="background-color: #e65100;">Create Item in Catalog 🎁</button>
         </form>
 
-        <h3 style="margin-top: 1.5rem; font-size: 15px; color: #ff9800;">Sparade Prylar:</h3>
+        <h3 style="margin-top: 1.5rem; font-size: 15px; color: #ff9800;">Catalog Items:</h3>
         <table>
           <thead>
             <tr>
-              <th>Pryl</th>
-              <th>Typ</th>
-              <th>Pris</th>
+              <th>Item</th>
+              <th>Type</th>
+              <th>Price</th>
               <th>Attack Bonus</th>
-              <th>Beskrivning</th>
+              <th>Description</th>
             </tr>
           </thead>
           <tbody id="item-pool-table-body">
-            <tr><td colspan="5">Laddar item pool...</td></tr>
+            <tr><td colspan="5">Loading item catalog...</td></tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Publicera Quests -->
+      <!-- Publish Quests -->
       <div class="admin-card" id="quest-form-card">
-        <h2>📢 Skapa & Publicera Utmaning</h2>
+        <h2>📢 Create & Publish Challenge</h2>
         <form id="publish-quest-form">
           <div class="form-row">
             <div class="form-group" style="flex: 2;">
-              <label>Titel / Beskrivning:</label>
-              <input type="text" id="quest-title" placeholder="t.ex. Spring 5km eller Diska berget i köket" required>
+              <label>Title / Description:</label>
+              <input type="text" id="quest-title" placeholder="e.g. Run 5km or Wash all dishes" required>
             </div>
             
             <div class="form-group" style="flex: 1;">
-              <label>Mottagare (Sök Spelare eller Hushåll):</label>
-              <input type="text" id="target-search-input" placeholder="🌍 Alla (Sök för att begränsa...)" autocomplete="off">
+              <label>Recipient (Search Player or House):</label>
+              <input type="text" id="target-search-input" placeholder="🌍 All Users (Search to filter...)" autocomplete="off">
               <div id="search-results" class="search-results-dropdown"></div>
               
               <input type="hidden" id="selected-target-type" value="all">
               <input type="hidden" id="selected-target-id" value="">
               
               <div id="active-target-chip" style="display: none;" class="target-chip">
-                <span id="chip-text">🌍 Alla Användare</span>
+                <span id="chip-text">🌍 All Users</span>
                 <span onclick="resetTargetSelection()">✖</span>
               </div>
             </div>
@@ -255,84 +255,84 @@
 
           <div class="form-row">
             <div class="form-group" style="flex: 1;">
-              <label>Typ:</label>
+              <label>Type:</label>
               <select id="quest-type">
-                <option value="daily">Daily (Daglig)</option>
-                <option value="weekly">Weekly (Veckovis / Mellanboss)</option>
-                <option value="monthly">Monthly (Månadsboss)</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly (Mini-Boss)</option>
+                <option value="monthly">Monthly (Main Boss)</option>
               </select>
             </div>
             <div class="form-group" style="flex: 1;">
-              <label>XP Belöning:</label>
+              <label>XP Reward:</label>
               <input type="number" id="quest-xp" value="20" required>
             </div>
             <div class="form-group" style="flex: 1;">
-              <label>Coin Belöning:</label>
+              <label>Coin Reward:</label>
               <input type="number" id="quest-coins" value="10" required>
             </div>
             <div class="form-group" style="flex: 1;">
-              <label>Föremålsbelöning (Valfri):</label>
+              <label>Item Reward (Optional):</label>
               <select id="quest-item-select">
-                <option value="">-- Ingen Pryl --</option>
+                <option value="">-- No Item --</option>
               </select>
             </div>
           </div>
-          <button type="submit">Spara & Publicera Utmaning 🚀</button>
+          <button type="submit">Save & Publish Quest 🚀</button>
         </form>
       </div>
 
-      <!-- Quest Pool Översikt -->
-      <h2>📦 Central Quest Pool (Sparade Mallar)</h2>
+      <!-- Quest Pool Overview -->
+      <h2>📦 Central Quest Pool (Saved Templates)</h2>
       <table>
         <thead>
           <tr>
-            <th>Titel</th>
-            <th>Typ</th>
+            <th>Title</th>
+            <th>Type</th>
             <th>XP</th>
             <th>Coins</th>
             <th>Item Reward</th>
-            <th>Skapad</th>
-            <th>Åtgärd</th>
+            <th>Created</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody id="pool-table-body">
-          <tr><td colspan="7">Laddar quest pool...</td></tr>
+          <tr><td colspan="7">Loading quest pool...</td></tr>
         </tbody>
       </table>
 
-      <!-- Hushållsöversikt -->
-      <h2>🏠 Aktiva Hushåll & Hem</h2>
+      <!-- Households Overview -->
+      <h2>🏠 Active Households</h2>
       <table>
         <thead>
           <tr>
-            <th>Hemmets Namn</th>
-            <th>Inbjudningskod</th>
-            <th>Medlemmar</th>
-            <th>Total Hem-XP</th>
-            <th>Totala Coins</th>
-            <th>Skapat Datum</th>
+            <th>Household Name</th>
+            <th>Invite Code</th>
+            <th>Members</th>
+            <th>Total House XP</th>
+            <th>Total Coins</th>
+            <th>Created Date</th>
           </tr>
         </thead>
         <tbody id="household-table-body">
-          <tr><td colspan="6">Laddar hushåll...</td></tr>
+          <tr><td colspan="6">Loading households...</td></tr>
         </tbody>
       </table>
 
-      <!-- Användaröversikt -->
-      <h2>👤 Enskilda Användare</h2>
+      <!-- User Overview -->
+      <h2>👤 Users</h2>
       <table>
         <thead>
           <tr>
-            <th>Namn</th>
-            <th>Roll</th>
-            <th>Nivå (Level)</th>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Level</th>
             <th>Total XP</th>
             <th>Coins</th>
-            <th>Slutförda vanor</th>
+            <th>Completed Habits</th>
           </tr>
         </thead>
         <tbody id="user-table-body">
-          <tr><td colspan="6">Laddar användare...</td></tr>
+          <tr><td colspan="6">Loading users...</td></tr>
         </tbody>
       </table>
     </div>
@@ -386,12 +386,12 @@
       const shopSelect = document.getElementById('editor-shop-item-select');
       const questSelect = document.getElementById('quest-item-select');
 
-      gateSelect.innerHTML = '<option value="">-- Välj Nyckel/Pryl --</option>';
-      shopSelect.innerHTML = '<option value="">-- Välj Pryl --</option>';
-      questSelect.innerHTML = '<option value="">-- Ingen Pryl --</option>';
+      gateSelect.innerHTML = '<option value="">-- Select Key/Item --</option>';
+      shopSelect.innerHTML = '<option value="">-- Select Item --</option>';
+      questSelect.innerHTML = '<option value="">-- No Item --</option>';
 
       if (cachedItems.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5">Inga prylar i katalogen ännu.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5">No items in catalog yet.</td></tr>';
         return;
       }
 
@@ -429,9 +429,9 @@
       });
 
       if (error) {
-        alert('Kunde inte skapa pryl: ' + error.message);
+        alert('Failed to create item: ' + error.message);
       } else {
-        alert(`Prylen "${name}" skapad!`);
+        alert(`Item "${name}" created!`);
         document.getElementById('item-name').value = '';
         document.getElementById('item-desc').value = '';
         document.getElementById('item-attack').value = '0';
@@ -452,7 +452,7 @@
 
     function loadMapForMapping() {
       const url = document.getElementById('map-image-url').value.trim();
-      if (!url) return alert('Ange en giltig bild-URL!');
+      if (!url) return alert('Enter a valid image URL!');
 
       const img = document.getElementById('map-preview');
       img.src = url;
@@ -460,7 +460,7 @@
         document.getElementById('mapping-area').style.display = 'block';
         renderNodesOverlay();
       };
-      img.onerror = () => alert('Kunde inte ladda bilden. Kontrollera URL:en!');
+      img.onerror = () => alert('Failed to load image. Check the URL!');
     }
 
     function handleMapClick(e) {
@@ -501,7 +501,7 @@
       document.getElementById('editor-required-item-select').value = n.required_item || '';
       document.getElementById('editor-shop-item-select').value = n.shop_item_name || '';
 
-      document.getElementById('editor-boss-name').value = n.boss_name || 'Månadsbossen';
+      document.getElementById('editor-boss-name').value = n.boss_name || 'Monthly Boss';
       document.getElementById('editor-boss-hp').value = n.boss_hp || 300;
       document.getElementById('editor-boss-damage').value = n.boss_damage || 20;
 
@@ -538,13 +538,13 @@
         mapNodes[selectedNodeIndex].shop_item_name = selectedItemName;
         mapNodes[selectedNodeIndex].shop_item_cost = itemData ? itemData.cost : 100;
       } else if (type === 'boss') {
-        mapNodes[selectedNodeIndex].boss_name = document.getElementById('editor-boss-name').value.trim() || 'Månadsbossen';
+        mapNodes[selectedNodeIndex].boss_name = document.getElementById('editor-boss-name').value.trim() || 'Monthly Boss';
         mapNodes[selectedNodeIndex].boss_hp = parseInt(document.getElementById('editor-boss-hp').value) || 300;
         mapNodes[selectedNodeIndex].boss_damage = parseInt(document.getElementById('editor-boss-damage').value) || 20;
       }
 
       renderNodesOverlay();
-      alert(`Nod ${mapNodes[selectedNodeIndex].node} sparad!`);
+      alert(`Node ${mapNodes[selectedNodeIndex].node} saved!`);
     }
 
     function renderNodesOverlay() {
@@ -579,8 +579,8 @@
       const monthKey = document.getElementById('map-month-key').value.trim();
       const imageUrl = document.getElementById('map-image-url').value.trim();
 
-      if (!monthKey || !imageUrl) return alert('Fyll i både månadsnyckel och bild-URL!');
-      if (mapNodes.length === 0) return alert('Klicka ut minst en nod på kartan först!');
+      if (!monthKey || !imageUrl) return alert('Fill in both month key and image URL!');
+      if (mapNodes.length === 0) return alert('Click on the map to create at least one node first!');
 
       const { error } = await db.from('active_map').upsert({
         month_key: monthKey,
@@ -590,9 +590,9 @@
       }, { onConflict: 'month_key' });
 
       if (error) {
-        alert('Fel vid sparning: ' + error.message);
+        alert('Save error: ' + error.message);
       } else {
-        alert(`Kartan för ${monthKey} har sparats med ${mapNodes.length} noder! 🎉`);
+        alert(`Map for ${monthKey} has been saved with ${mapNodes.length} nodes! 🎉`);
       }
     }
 
@@ -621,8 +621,8 @@
               count++;
               const div = document.createElement('div');
               div.className = 'search-result-item';
-              div.innerHTML = `<span>👤 ${u.full_name || 'Anonym'}</span><span style="color:#aaa;">Spelare</span>`;
-              div.onclick = () => selectTarget('user', u.id, `👤 Spelare: ${u.full_name || 'Anonym'}`);
+              div.innerHTML = `<span>👤 ${u.full_name || 'Anonymous'}</span><span style="color:#aaa;">Player</span>`;
+              div.onclick = () => selectTarget('user', u.id, `👤 Player: ${u.full_name || 'Anonymous'}`);
               resultsDiv.appendChild(div);
             });
           }
@@ -632,14 +632,14 @@
               count++;
               const div = document.createElement('div');
               div.className = 'search-result-item';
-              div.innerHTML = `<span>🏠 ${h.name}</span><span style="color:#aaa;">Kod: ${h.invite_code}</span>`;
-              div.onclick = () => selectTarget('house', h.id, `🏠 Hem: ${h.name}`);
+              div.innerHTML = `<span>🏠 ${h.name}</span><span style="color:#aaa;">Code: ${h.invite_code}</span>`;
+              div.onclick = () => selectTarget('house', h.id, `🏠 House: ${h.name}`);
               resultsDiv.appendChild(div);
             });
           }
 
           if (count === 0) {
-            resultsDiv.innerHTML = '<div class="search-result-item" style="color:#888;">Inga träffar hittades.</div>';
+            resultsDiv.innerHTML = '<div class="search-result-item" style="color:#888;">No matches found.</div>';
           }
 
           resultsDiv.style.display = 'block';
@@ -707,9 +707,9 @@
       });
 
       if (error) {
-        alert('Fel vid publicering: ' + error.message);
+        alert('Publish error: ' + error.message);
       } else {
-        alert(`Utmaningen "${title}" har publicerats!`);
+        alert(`Challenge "${title}" published!`);
         document.getElementById('quest-title').value = '';
         resetTargetSelection();
         loadQuestPool();
@@ -731,13 +731,13 @@
       tbody.innerHTML = '';
 
       if (!quests || quests.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7">Inga uppdrag i poolen ännu.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7">No quests in pool yet.</td></tr>';
         return;
       }
 
       quests.forEach(q => {
         const tr = document.createElement('tr');
-        const dateStr = new Date(q.created_at).toLocaleDateString('sv-SE');
+        const dateStr = new Date(q.created_at).toLocaleDateString();
         const safeTitle = q.title.replace(/'/g, "\\'");
         const safeItem = (q.item_reward || '').replace(/'/g, "\\'");
 
@@ -749,7 +749,7 @@
           <td>${q.item_reward ? `🎁 ${q.item_reward}` : '-'}</td>
           <td>${dateStr}</td>
           <td>
-            <button class="action-btn" onclick="reuseQuest('${safeTitle}', '${q.quest_type}', ${q.xp_reward}, ${q.coin_reward}, '${safeItem}')">📋 Kopiera</button>
+            <button class="action-btn" onclick="reuseQuest('${safeTitle}', '${q.quest_type}', ${q.xp_reward}, ${q.coin_reward}, '${safeItem}')">📋 Copy</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -766,7 +766,7 @@
       houseTbody.innerHTML = '';
 
       if (!households || households.length === 0) {
-        houseTbody.innerHTML = '<tr><td colspan="6">Inga registrerade hushåll ännu.</td></tr>';
+        houseTbody.innerHTML = '<tr><td colspan="6">No registered households yet.</td></tr>';
       } else {
         households.forEach(h => {
           const houseMembers = members ? members.filter(m => m.household_id === h.id) : [];
@@ -783,13 +783,13 @@
             }
           });
 
-          const dateStr = new Date(h.created_at).toLocaleDateString('sv-SE');
+          const dateStr = new Date(h.created_at).toLocaleDateString();
 
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td><strong>${h.name}</strong></td>
             <td><span class="badge badge-house">${h.invite_code}</span></td>
-            <td>${memberCount} st medlem(mar)</td>
+            <td>${memberCount} member(s)</td>
             <td>✨ ${totalXp} XP</td>
             <td>💰 ${totalCoins} Coins</td>
             <td>${dateStr}</td>
@@ -802,18 +802,18 @@
       userTbody.innerHTML = '';
 
       if (!profiles || profiles.length === 0) {
-        userTbody.innerHTML = '<tr><td colspan="6">Inga användare hittades.</td></tr>';
+        userTbody.innerHTML = '<tr><td colspan="6">No users found.</td></tr>';
       } else {
         profiles.forEach(p => {
           const completedCount = logs ? logs.filter(log => log.user_id === p.id).length : 0;
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td><strong>${p.full_name || 'Anonym'}</strong></td>
+            <td><strong>${p.full_name || 'Anonymous'}</strong></td>
             <td><span class="badge ${p.role === 'admin' ? '' : 'badge-user'}">${p.role || 'user'}</span></td>
             <td>Level ${p.level || 1}</td>
             <td>${p.xp || 0} XP</td>
             <td>💰 ${p.coins || 0}</td>
-            <td>${completedCount} st</td>
+            <td>${completedCount} completed</td>
           `;
           userTbody.appendChild(tr);
         });

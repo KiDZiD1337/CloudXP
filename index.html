@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -51,7 +51,7 @@
     .leaderboard-widget { position: absolute; bottom: 1rem; right: 1rem; width: 320px; max-height: 480px; overflow-y: auto; }
 
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; }
-    .modal-card { background: #1e1e1e; padding: 1.8rem; border-radius: 12px; border: 1px solid #444; max-width: 440px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.8); text-align: center; }
+    .modal-card { background: #1e1e1e; padding: 1.8rem; border-radius: 12px; border: 1px solid #444; max-width: 460px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.8); text-align: center; }
     .modal-card h3 { margin-top: 0; color: #ff9800; font-size: 20px; }
     .modal-card p { font-size: 14px; color: #ccc; margin-bottom: 1.5rem; }
     .modal-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
@@ -71,6 +71,8 @@
     .select-btn.active { border-color: #ff9800; background: #4a148c; }
     .stats-preview { background: #121212; padding: 10px; border-radius: 6px; text-align: left; font-size: 11px; margin-bottom: 1rem; border: 1px solid #333; }
     .attribute-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; font-size: 11px; background: #121212; padding: 8px; border-radius: 6px; border: 1px solid #333; }
+    .habit-picker-box { text-align: left; background: #121212; padding: 10px; border-radius: 6px; border: 1px solid #333; margin-bottom: 1rem; max-height: 140px; overflow-y: auto; }
+    .habit-picker-item { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 4px 0; border-bottom: 1px solid #222; }
 
     @media (max-width: 820px) {
       body { overflow-y: auto; }
@@ -125,24 +127,24 @@
 
   <div id="login-card" class="login-container">
     <h1>CloudXP 🎮</h1>
-    <p>Logga in för att påbörja ditt äventyr.</p>
-    <button id="login-btn" class="primary-btn">Logga in med Google</button>
+    <p>Sign in to begin your adventure.</p>
+    <button id="login-btn" class="primary-btn">Sign in with Google</button>
   </div>
 
   <!-- CHARACTER CREATION MODAL -->
   <div id="char-create-modal" class="modal-overlay">
     <div class="modal-card">
-      <h2 style="color: #ff9800; margin-top: 0;">🌩️ Skapa din Cloudie</h2>
-      <p style="font-size: 12px; color: #aaa;">Välj Ras och Klass för att forma dina attribut och stridsstil!</p>
+      <h2 style="color: #ff9800; margin-top: 0;">🌩️ Create Your Cloudie</h2>
+      <p style="font-size: 12px; color: #aaa;">Select Race, Class & 3 Daily Core Habits to shape your stats and daily journey!</p>
 
-      <div style="text-align: left; font-size: 12px; font-weight: bold; margin-bottom: 4px;">1. Välj Ras:</div>
+      <div style="text-align: left; font-size: 12px; font-weight: bold; margin-bottom: 4px;">1. Choose Race:</div>
       <div class="char-select-grid">
         <button class="select-btn active" onclick="selectRace('Nimbus', this)">🌩️ Nimbus<br><span style="font-weight:normal; font-size:10px;">+AGI / Evasion</span></button>
         <button class="select-btn" onclick="selectRace('Stratus', this)">⚡ Stratus<br><span style="font-weight:normal; font-size:10px;">+INT / Crit</span></button>
         <button class="select-btn" onclick="selectRace('Cumulus', this)">🌧️ Cumulus<br><span style="font-weight:normal; font-size:10px;">+CON / HP</span></button>
       </div>
 
-      <div style="text-align: left; font-size: 12px; font-weight: bold; margin-bottom: 4px;">2. Välj Klass:</div>
+      <div style="text-align: left; font-size: 12px; font-weight: bold; margin-bottom: 4px;">2. Choose Class:</div>
       <div class="char-select-grid" style="grid-template-columns: repeat(3, 1fr);">
         <button class="select-btn active" onclick="selectClass('Warrior', this)">⚔️ Warrior</button>
         <button class="select-btn" onclick="selectClass('Ranger', this)">🏹 Ranger</button>
@@ -152,16 +154,21 @@
       </div>
 
       <div class="stats-preview" id="char-stats-preview">
-        Laddar attribut...
+        Loading stats preview...
       </div>
 
-      <button class="success-btn" style="width: 100%; font-size: 15px;" onclick="confirmCharacterCreation()">Påbörja Äventyret! 🚀</button>
+      <div style="text-align: left; font-size: 12px; font-weight: bold; margin-bottom: 4px;">3. Select 3 Core Habits for your Daily Streak:</div>
+      <div id="habit-picker-container" class="habit-picker-box">
+        Loading core habits pool...
+      </div>
+
+      <button class="success-btn" style="width: 100%; font-size: 15px;" onclick="confirmCharacterCreation()">Begin Adventure! 🚀</button>
     </div>
   </div>
 
   <div id="map-viewport" class="map-viewport" style="display: none;">
     <div class="map-container" id="map-container">
-      <img id="active-map-img" class="map-image" src="" alt="Månadens Karta">
+      <img id="active-map-img" class="map-image" src="" alt="Monthly Map">
       <div id="nodes-layer"></div>
       <div id="cloudie-overlay"></div>
     </div>
@@ -173,19 +180,19 @@
     </div>
   </div>
 
-  <!-- Standard Nod Modal -->
+  <!-- Standard Node Modal -->
   <div id="node-modal" class="modal-overlay">
     <div class="modal-card">
-      <h3 id="modal-title">Nod 1</h3>
-      <p id="modal-desc">Beskrivning...</p>
+      <h3 id="modal-title">Node 1</h3>
+      <p id="modal-desc">Description...</p>
       <div id="modal-actions" class="modal-actions"></div>
     </div>
   </div>
 
-  <!-- Boss Battle Mini-spels Modal -->
+  <!-- Boss Battle Mini-Game Modal -->
   <div id="boss-modal" class="modal-overlay">
     <div class="modal-card boss-battle-card">
-      <h2 id="boss-name-display" style="color: #ba68c8; margin: 0 0 10px 0;">👑 Månadsbossen</h2>
+      <h2 id="boss-name-display" style="color: #ba68c8; margin: 0 0 10px 0;">👑 Monthly Boss</h2>
       
       <!-- Boss HP -->
       <div style="margin-bottom: 8px; text-align: left;">
@@ -198,10 +205,10 @@
         </div>
       </div>
 
-      <!-- Spelar HP -->
+      <!-- Player HP -->
       <div style="margin-bottom: 8px; text-align: left;">
         <div style="display: flex; justify-content: space-between; font-size: 11px;">
-          <span>☁️ Din HP</span>
+          <span>☁️ Your HP</span>
           <span id="player-hp-text">80 / 80</span>
         </div>
         <div class="hp-bar-outer">
@@ -209,7 +216,7 @@
         </div>
       </div>
 
-      <!-- Spelar MP -->
+      <!-- Player MP -->
       <div style="margin-bottom: 12px; text-align: left;">
         <div style="display: flex; justify-content: space-between; font-size: 11px;">
           <span>🔮 Mana (MP)</span>
@@ -220,17 +227,17 @@
         </div>
       </div>
 
-      <!-- Strid logg -->
+      <!-- Battle Log -->
       <div id="battle-log" class="battle-log">
-        > Du kliver in i stridsarena! Bossen ryter!<br>
+        > You enter the arena! The boss roars!<br>
       </div>
 
-      <!-- Handlingar -->
+      <!-- Actions -->
       <div id="boss-actions" class="modal-actions">
-        <button class="danger-btn" onclick="executePlayerAttack()">⚔️ Attackera</button>
-        <button style="background-color: #7b1fa2; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer;" onclick="executeCastSpell()">🔮 Besvärjelse</button>
-        <button class="success-btn" onclick="executeUseItem()">🧪 Drick Dryck</button>
-        <button style="background: #555; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer;" onclick="fleeBossBattle()">🏃 Fly</button>
+        <button class="danger-btn" onclick="executePlayerAttack()">⚔️ Attack</button>
+        <button style="background-color: #7b1fa2; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer;" onclick="executeCastSpell()">🔮 Cast Spell</button>
+        <button class="success-btn" onclick="executeUseItem()">🧪 Drink Potion</button>
+        <button style="background: #555; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer;" onclick="fleeBossBattle()">🏃 Flee</button>
       </div>
     </div>
   </div>
@@ -239,19 +246,19 @@
     
     <div class="card profile-widget">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 id="user-name" style="margin: 0; font-size: 18px;">Välkommen!</h2>
+        <h2 id="user-name" style="margin: 0; font-size: 18px;">Welcome!</h2>
         <span id="user-race-class" style="font-size: 11px; background: #4a148c; padding: 2px 8px; border-radius: 12px; font-weight: bold;"></span>
       </div>
       
       <div class="stats-bar">
         <span>⭐ Lvl <span id="user-level">1</span></span>
-        <span>🔥 <span id="user-streak">0</span> Dagar</span>
+        <span>🔥 <span id="user-streak">0</span> Days</span>
         <span>💰 <span id="user-coins">0</span> Coins</span>
       </div>
 
       <div class="xp-progress-container">
         <div class="xp-text">
-          <span>Progress till Lvl <span id="next-level">2</span></span>
+          <span>Progress to Lvl <span id="next-level">2</span></span>
           <span><span id="user-xp">0</span> / <span id="target-xp">100</span> XP</span>
         </div>
         <div class="xp-bar-bg">
@@ -270,16 +277,16 @@
       </div>
 
       <div style="margin-top: 10px;">
-        <span style="font-size: 11px; color: #aaa;">🎒 Ditt Inventarie:</span>
-        <div id="user-inventory" class="inventory-box">Inga prylar ännu.</div>
+        <span style="font-size: 11px; color: #aaa;">🎒 Inventory:</span>
+        <div id="user-inventory" class="inventory-box">No items yet.</div>
       </div>
 
       <div class="habit-list">
-        <div id="habits-container">Laddar utmaningar...</div>
+        <div id="habits-container">Loading challenges...</div>
       </div>
 
       <button id="admin-link-btn" class="admin-btn" onclick="window.location.href='admin.html'">⚙️ Admin Panel</button>
-      <button id="logout-btn" style="background-color: #e53935; margin-top: 1rem; width: 100%; border: none; color: white; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">Logga ut</button>
+      <button id="logout-btn" style="background-color: #e53935; margin-top: 1rem; width: 100%; border: none; color: white; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">Log out</button>
     </div>
 
     <div class="card leaderboard-widget">
@@ -289,13 +296,13 @@
       </div>
 
       <div class="tab-container">
-        <button id="tab-house-btn" class="tab-btn active" onclick="switchLeaderboardTab('house')">🏠 Hem</button>
-        <button id="tab-global-users-btn" class="tab-btn" onclick="switchLeaderboardTab('global-users')">🌍 Spelare</button>
-        <button id="tab-global-houses-btn" class="tab-btn" onclick="switchLeaderboardTab('global-houses')">🏘️ Hem-rank</button>
+        <button id="tab-house-btn" class="tab-btn active" onclick="switchLeaderboardTab('house')">🏠 House</button>
+        <button id="tab-global-users-btn" class="tab-btn" onclick="switchLeaderboardTab('global-users')">🌍 Players</button>
+        <button id="tab-global-houses-btn" class="tab-btn" onclick="switchLeaderboardTab('global-houses')">🏘️ House-Rank</button>
       </div>
 
       <div id="leaderboard-content">
-        Laddar topplista...
+        Loading leaderboard...
       </div>
     </div>
 
@@ -311,6 +318,7 @@
     let activeTab = 'house';
     let currentMapNodes = [];
     let cachedItems = [];
+    let coreHabitsPool = [];
     
     let allCoreDailiesDone = false;
 
@@ -341,7 +349,7 @@
         provider: 'google',
         options: { redirectTo: window.location.origin }
       });
-      if (error) alert('Fel: ' + error.message);
+      if (error) alert('Error: ' + error.message);
     });
 
     document.getElementById('logout-btn').addEventListener('click', async () => {
@@ -354,8 +362,29 @@
       cachedItems = data || [];
     }
 
+    async function loadCoreHabitsPool() {
+      const { data } = await db.from('quest_pool').select('*').eq('is_core', true);
+      coreHabitsPool = data || [];
+      renderCoreHabitsPicker();
+    }
+
+    function renderCoreHabitsPicker() {
+      const container = document.getElementById('habit-picker-container');
+      if (!coreHabitsPool || coreHabitsPool.length === 0) {
+        container.innerHTML = '<span style="color:#aaa;">No core habits found in pool.</span>';
+        return;
+      }
+
+      container.innerHTML = coreHabitsPool.map(h => `
+        <div class="habit-picker-item">
+          <input type="checkbox" name="selected-core-habit" value="${h.id}" id="habit-chk-${h.id}">
+          <label for="habit-chk-${h.id}">${h.title} (+${h.xp_reward} XP)</label>
+        </div>
+      `).join('');
+    }
+
     /* ==========================================
-       CHARACTER CREATION LOGIK
+       CHARACTER CREATION LOGIC
        ========================================== */
     function selectRace(race, btn) {
       selectedRace = race;
@@ -400,7 +429,16 @@
     }
 
     async function confirmCharacterCreation() {
+      const checkedBoxes = Array.from(document.querySelectorAll('input[name="selected-core-habit"]:checked'));
+      
+      if (checkedBoxes.length !== 3) {
+        alert('Please select exactly 3 Core Habits for your daily routine!');
+        return;
+      }
+
+      const selectedHabitIds = checkedBoxes.map(chk => chk.value);
       const stats = calculateStats(selectedRace, selectedClass);
+      
       const updates = {
         race: selectedRace,
         class: selectedClass,
@@ -417,17 +455,38 @@
       const { error } = await db.from('profiles').update(updates).eq('id', currentUser.id);
 
       if (error) {
-        alert('Fel vid skapande: ' + error.message);
-      } else {
-        Object.assign(currentUserProfile, updates);
-        renderProfileUi();
-        document.getElementById('char-create-modal').style.display = 'none';
+        alert('Error updating profile: ' + error.message);
+        return;
       }
+
+      // Assign selected Core Habits into the user's habits table
+      const habitsToInsert = selectedHabitIds.map(habitId => {
+        const questData = coreHabitsPool.find(q => q.id === habitId);
+        return {
+          user_id: currentUser.id,
+          quest_pool_id: questData.id,
+          title: questData.title,
+          xp_reward: questData.xp_reward,
+          coin_reward: questData.coin_reward,
+          quest_type: 'daily',
+          is_core: true,
+          item_reward: questData.item_reward,
+          assigned_date: new Date().toISOString().split('T')[0]
+        };
+      });
+
+      await db.from('habits').delete().eq('user_id', currentUser.id).eq('is_core', true);
+      await db.from('habits').insert(habitsToInsert);
+
+      Object.assign(currentUserProfile, updates);
+      renderProfileUi();
+      loadHabits(currentUser.id);
+      document.getElementById('char-create-modal').style.display = 'none';
     }
 
     function renderProfileUi() {
       const p = currentUserProfile;
-      document.getElementById('user-name').innerText = 'Hej ' + (p.full_name || 'Användare') + '!';
+      document.getElementById('user-name').innerText = 'Welcome ' + (p.full_name || 'User') + '!';
       document.getElementById('user-race-class').innerText = `${p.race || 'Nimbus'} ${p.class || 'Warrior'}`;
       document.getElementById('user-coins').innerText = p.coins || 0;
       document.getElementById('user-streak').innerText = p.streak_count || 0;
@@ -619,7 +678,7 @@
     function renderInventory(inv) {
       const box = document.getElementById('user-inventory');
       if (!inv || inv.length === 0) {
-        box.innerHTML = '<span style="color:#888;">Inga prylar ännu.</span>';
+        box.innerHTML = '<span style="color:#888;">No items yet.</span>';
         return;
       }
       box.innerHTML = inv.map(i => `<span class="inventory-item">🎁 ${i}</span>`).join('');
@@ -687,7 +746,7 @@
         marker.className = 'cloudie-marker';
         marker.style.left = `${targetNode.x}%`;
         marker.style.top = `${targetNode.y}%`;
-        marker.innerHTML = `<div class="cloudie-name">Du (Nod ${nodeNum})</div>☁️`;
+        marker.innerHTML = `<div class="cloudie-name">You (Node ${nodeNum})</div>☁️`;
         overlay.appendChild(marker);
       }
     }
@@ -703,18 +762,18 @@
       const inventory = currentUserProfile ? (currentUserProfile.inventory || []) : [];
 
       const nodeTypeLabel = node.type ? node.type.toUpperCase() : 'STANDARD';
-      title.innerText = `📍 Nod ${node.node} (${nodeTypeLabel})`;
+      title.innerText = `📍 Node ${node.node} (${nodeTypeLabel})`;
       actions.innerHTML = '';
 
       if (node.type === 'boss') {
         const canReach = userXp >= (node.required_xp || 0);
 
         if (canReach) {
-          desc.innerText = `⚔️ Du står inför ${node.boss_name || 'Månadsbossen'}! Är du redo för strid? Om du förlorar skickas du tillbaka till Nod 1 för att träna mer!`;
+          desc.innerText = `⚔️ You face ${node.boss_name || 'Monthly Boss'}! Are you ready for battle? If you lose, you will be sent back to Node 1!`;
           
           const fightBtn = document.createElement('button');
           fightBtn.className = 'danger-btn';
-          fightBtn.innerText = `Utmana Bossen! 🗡️`;
+          fightBtn.innerText = `Challenge Boss! 🗡️`;
           fightBtn.onclick = async () => {
             if (userNode !== node.node) {
               await moveToNode(node.node, false);
@@ -724,31 +783,31 @@
           };
           actions.appendChild(fightBtn);
         } else {
-          desc.innerText = `🔒 Du kan inte utmana Bossen ännu! Kräver ${node.required_xp || 0} XP (du har ${userXp} XP).`;
+          desc.innerText = `🔒 You cannot challenge the boss yet! Requires ${node.required_xp || 0} XP (you have ${userXp} XP).`;
         }
       } 
       else if (userNode !== node.node) {
         const canReach = userXp >= (node.required_xp || 0);
 
         if (canReach) {
-          desc.innerText = `Du står på Nod ${userNode}. Vill du förflytta din avatar till Nod ${node.node}? (Kräver ${node.required_xp || 0} XP, du har ${userXp} XP)`;
+          desc.innerText = `You are on Node ${userNode}. Do you want to move your avatar to Node ${node.node}? (Requires ${node.required_xp || 0} XP, you have ${userXp} XP)`;
           
           const moveBtn = document.createElement('button');
           moveBtn.className = 'primary-btn';
-          moveBtn.innerText = `Flytta till Nod ${node.node} 🏃‍♂️`;
+          moveBtn.innerText = `Move to Node ${node.node} 🏃‍♂️`;
           moveBtn.onclick = () => moveToNode(node.node);
           actions.appendChild(moveBtn);
         } else {
-          desc.innerText = `🔒 Du kan inte flytta hit ännu. Nod ${node.node} kräver ${node.required_xp || 0} XP (du har ${userXp} XP).`;
+          desc.innerText = `🔒 You cannot move here yet. Node ${node.node} requires ${node.required_xp || 0} XP (you have ${userXp} XP).`;
         }
       } 
       else {
         if (node.type === 'shop') {
-          desc.innerText = `Välkommen till butiken! Här kan du köpa "${node.shop_item_name || 'Okänd pryl'}" för ${node.shop_item_cost || 100} Coins.`;
+          desc.innerText = `Welcome to the shop! Here you can buy "${node.shop_item_name || 'Unknown item'}" for ${node.shop_item_cost || 100} Coins.`;
           
           const buyBtn = document.createElement('button');
           buyBtn.className = 'primary-btn';
-          buyBtn.innerText = `Köp för ${node.shop_item_cost || 100} 💰`;
+          buyBtn.innerText = `Buy for ${node.shop_item_cost || 100} 💰`;
           buyBtn.onclick = () => executeBuyItem(node.shop_item_name, node.shop_item_cost);
           actions.appendChild(buyBtn);
 
@@ -758,34 +817,34 @@
             (node.next_nodes || []).forEach(nextId => {
               const btn = document.createElement('button');
               btn.className = 'primary-btn';
-              btn.innerText = `Gå vidare till Nod ${nextId} ➡️`;
+              btn.innerText = `Proceed to Node ${nextId} ➡️`;
               btn.onclick = () => moveToNode(nextId);
               actions.appendChild(btn);
             });
           } else {
-            desc.innerText = `🔀 Du står vid ett vägskäl, men du måste slutföra dina dagliga rutiner (Core Quests) innan du kan välja väg!`;
+            desc.innerText = `🔀 You are at a fork, but you must complete your daily Core Quests before choosing a path!`;
           }
 
         } else if (node.type === 'gate') {
           const hasItem = inventory.includes(node.required_item);
           if (hasItem) {
-            desc.innerText = `Porten kräver "${node.required_item}". Du har föremålet i ditt inventarie!`;
+            desc.innerText = `The gate requires "${node.required_item}". You have the item in your inventory!`;
             (node.next_nodes || []).forEach(nextId => {
               const unlockBtn = document.createElement('button');
               unlockBtn.className = 'primary-btn';
-              unlockBtn.innerText = `Lås upp & Gå till Nod ${nextId} 🔑`;
+              unlockBtn.innerText = `Unlock & Go to Node ${nextId} 🔑`;
               unlockBtn.onclick = () => moveToNode(nextId);
               actions.appendChild(unlockBtn);
             });
           } else {
-            desc.innerText = `🔒 Porten är låst! Du behöver föremålet "${node.required_item}" i ditt inventarie för att passera här.`;
+            desc.innerText = `🔒 The gate is locked! You need the item "${node.required_item}" in your inventory to pass.`;
           }
 
         } else {
           if (allCoreDailiesDone) {
-             desc.innerText = `Du befinner dig på Nod ${node.node}. Alla dagliga rutiner är klara! Du är redo att gå vidare när du vill.`;
+             desc.innerText = `You are on Node ${node.node}. All daily routines are completed! You are ready to move on anytime.`;
           } else {
-             desc.innerText = `Du befinner dig på Nod ${node.node}. Gör klart dina dagliga rutiner för att samla XP och kunna resa vidare!`;
+             desc.innerText = `You are on Node ${node.node}. Complete your daily routines to earn XP and travel further!`;
           }
         }
       }
@@ -797,7 +856,7 @@
       closeBtn.style.padding = '8px 16px';
       closeBtn.style.borderRadius = '6px';
       closeBtn.style.cursor = 'pointer';
-      closeBtn.innerText = 'Stäng';
+      closeBtn.innerText = 'Close';
       closeBtn.onclick = () => { modal.style.display = 'none'; };
       actions.appendChild(closeBtn);
 
@@ -805,7 +864,7 @@
     }
 
     /* ==========================================
-       INTERAKTIV BOSS BATTLE MOTOR (MED STATS & MISS)
+       INTERACTIVE BOSS BATTLE ENGINE
        ========================================== */
     function startBossBattle(node) {
       currentBossNode = node;
@@ -823,8 +882,8 @@
       playerMaxMp = 30 + (wisVal * 5);
       playerCurrentMp = playerMaxMp;
 
-      document.getElementById('boss-name-display').innerText = `👑 ${node.boss_name || 'Månadsbossen'}`;
-      document.getElementById('battle-log').innerHTML = `> Striden har börjat mot ${node.boss_name || 'Månadsbossen'}!<br>`;
+      document.getElementById('boss-name-display').innerText = `👑 ${node.boss_name || 'Monthly Boss'}`;
+      document.getElementById('battle-log').innerHTML = `> Battle started against ${node.boss_name || 'Monthly Boss'}!<br>`;
 
       updateBattleHpUi();
       document.getElementById('boss-modal').style.display = 'flex';
@@ -860,7 +919,7 @@
       const isHit = Math.random() < hitChance;
 
       if (!isHit) {
-        logBattleMessage(`<span style="color:#aaa;">💨 Du svingar men <b>MISSSAR</b> ditt slag!</span>`);
+        logBattleMessage(`<span style="color:#aaa;">💨 You swing but <b>MISS</b> your attack!</span>`);
       } else {
         let baseDmg = 8 + (mainStat * 1.5);
         let gearBonus = 0;
@@ -880,18 +939,18 @@
         bossCurrentHp = Math.max(0, bossCurrentHp - totalDmg);
 
         if (isCrit) {
-          logBattleMessage(`💥 <b style="color:#ffeb3b;">CRITICAL HIT!</b> Du anfaller och gör <b style="color:#aed581;">${totalDmg} skada</b>!`);
+          logBattleMessage(`💥 <b style="color:#ffeb3b;">CRITICAL HIT!</b> You strike for <b style="color:#aed581;">${totalDmg} damage</b>!`);
         } else {
-          logBattleMessage(`Du anfaller och gör <b style="color:#aed581;">${totalDmg} skada</b>!`);
+          logBattleMessage(`You attack and deal <b style="color:#aed581;">${totalDmg} damage</b>!`);
         }
       }
 
       updateBattleHpUi();
 
       if (bossCurrentHp <= 0) {
-        logBattleMessage(`<b style="color:#ffeb3b;">🎉 SEGER! Du har besegrat bossen!</b>`);
+        logBattleMessage(`<b style="color:#ffeb3b;">🎉 VICTORY! You defeated the boss!</b>`);
         setTimeout(() => {
-          alert('🎉 GRATTIS! Du besegrade Månadsbossen och belönas med +50 Coins och +100 XP!');
+          alert('🎉 CONGRATS! You defeated the Monthly Boss and earned +50 Coins and +100 XP!');
           claimBossVictoryRewards();
         }, 600);
         return;
@@ -905,7 +964,7 @@
       const manaCost = 15;
 
       if (playerCurrentMp < manaCost) {
-        logBattleMessage(`<span style="color:#ff8a80;">⚠️ Du har inte tillräckligt med Mana (kräver ${manaCost} MP)!</span>`);
+        logBattleMessage(`<span style="color:#ff8a80;">⚠️ Not enough Mana (requires ${manaCost} MP)!</span>`);
         return;
       }
 
@@ -914,14 +973,14 @@
       const spellDmg = Math.floor(20 + (intVal * 2.2) + (Math.random() * 10));
 
       bossCurrentHp = Math.max(0, bossCurrentHp - spellDmg);
-      logBattleMessage(`🔮 Du kastar en kraftfull besvärjelse och gör <b style="color:#ba68c8;">${spellDmg} magisk skada</b>!`);
+      logBattleMessage(`🔮 You cast a powerful spell dealing <b style="color:#ba68c8;">${spellDmg} magic damage</b>!`);
 
       updateBattleHpUi();
 
       if (bossCurrentHp <= 0) {
-        logBattleMessage(`<b style="color:#ffeb3b;">🎉 SEGER! Du har besegrat bossen!</b>`);
+        logBattleMessage(`<b style="color:#ffeb3b;">🎉 VICTORY! You defeated the boss!</b>`);
         setTimeout(() => {
-          alert('🎉 GRATTIS! Du besegrade Månadsbossen och belönas med +50 Coins och +100 XP!');
+          alert('🎉 CONGRATS! You defeated the Monthly Boss and earned +50 Coins and +100 XP!');
           claimBossVictoryRewards();
         }, 600);
         return;
@@ -940,19 +999,19 @@
         const isDodged = Math.random() < dodgeChance;
 
         if (isDodged) {
-          logBattleMessage(`⚡ <b style="color:#81d4fa;">Du snabb-undviker bossens attack helt!</b>`);
+          logBattleMessage(`⚡ <b style="color:#81d4fa;">You quickly dodge the boss attack!</b>`);
         } else {
           const bossDmgRoll = Math.floor(Math.random() * 6) + bossDamage;
           playerCurrentHp = Math.max(0, playerCurrentHp - bossDmgRoll);
-          logBattleMessage(`Bossen slår tillbaka och gör <b style="color:#ff8a80;">${bossDmgRoll} skada</b> på dig!`);
+          logBattleMessage(`The boss strikes back dealing <b style="color:#ff8a80;">${bossDmgRoll} damage</b>!`);
         }
 
         updateBattleHpUi();
 
         if (playerCurrentHp <= 0) {
-          logBattleMessage(`<b style="color:#f44336;">💀 Du blev besegrad...</b>`);
+          logBattleMessage(`<b style="color:#f44336;">💀 You were defeated...</b>`);
           setTimeout(async () => {
-            alert('💥 Du förlorade striden! Din avatar skickas tillbaka till startpunkten på Nod 1.');
+            alert('💥 You lost the battle! Your avatar is returned to Node 1.');
             document.getElementById('boss-modal').style.display = 'none';
             await resetToNodeOne();
           }, 600);
@@ -962,10 +1021,10 @@
 
     async function executeUseItem() {
       const inventory = currentUserProfile ? (currentUserProfile.inventory || []) : [];
-      const itemIdx = inventory.indexOf('Magisk Dryck');
+      const itemIdx = inventory.indexOf('Magic Potion');
 
       if (itemIdx === -1) {
-        logBattleMessage(`<span style="color:#aaa;">Du har ingen "Magisk Dryck" i ditt inventarie!</span>`);
+        logBattleMessage(`<span style="color:#aaa;">You have no "Magic Potion" in your inventory!</span>`);
         return;
       }
 
@@ -976,7 +1035,7 @@
       playerCurrentHp = Math.min(playerMaxHp, playerCurrentHp + healAmt);
       playerCurrentMp = Math.min(playerMaxMp, playerCurrentMp + 25);
 
-      logBattleMessage(`🧪 Du dricker en Magisk Dryck och återställer <b style="color:#81c784;">${healAmt} HP</b> & 25 MP!`);
+      logBattleMessage(`🧪 You drink a Magic Potion and restore <b style="color:#81c784;">${healAmt} HP</b> & 25 MP!`);
       updateBattleHpUi();
 
       renderInventory(inventory);
@@ -984,7 +1043,7 @@
     }
 
     function fleeBossBattle() {
-      logBattleMessage(`🏃 Du flydde från striden.`);
+      logBattleMessage(`🏃 You fled from the battle.`);
       setTimeout(() => {
         document.getElementById('boss-modal').style.display = 'none';
       }, 300);
@@ -1009,7 +1068,7 @@
     async function resetToNodeOne() {
       const { error } = await db.from('profiles').update({ map_node: 1 }).eq('id', currentUser.id);
       if (error) {
-        alert('Fel vid återställning: ' + error.message);
+        alert('Reset error: ' + error.message);
       } else {
         currentUserProfile.map_node = 1;
         renderNodesOnMap();
@@ -1022,9 +1081,9 @@
     async function executeBuyItem(itemName, cost) {
       const { data, error } = await db.rpc('buy_shop_item', { p_item_name: itemName, p_cost: cost });
       if (error) {
-        alert('Köp misslyckades: ' + error.message);
+        alert('Purchase failed: ' + error.message);
       } else {
-        alert(`Grattis! Du köpte ${itemName}! 🎉`);
+        alert(`Congrats! You bought ${itemName}! 🎉`);
         currentUserProfile.coins = data.coins;
         currentUserProfile.inventory = data.inventory;
         document.getElementById('user-coins').innerText = data.coins;
@@ -1036,7 +1095,7 @@
     async function moveToNode(newNodeId, autoCloseModal = true) {
       const { error } = await db.from('profiles').update({ map_node: newNodeId }).eq('id', currentUser.id);
       if (error) {
-        alert('Kunde inte flytta: ' + error.message);
+        alert('Could not move: ' + error.message);
       } else {
         currentUserProfile.map_node = newNodeId;
         renderNodesOnMap();
@@ -1067,21 +1126,21 @@
         if (!member) {
           codeDisplay.innerText = '';
           content.innerHTML = `
-            <p style="font-size: 11px; color: #aaa;">Du tillhör inget hem ännu.</p>
+            <p style="font-size: 11px; color: #aaa;">You do not belong to a house yet.</p>
             <div class="household-form">
-              <input type="text" id="new-house-name" placeholder="Skapa hem (namn)">
-              <button onclick="createHouse()">Skapa</button>
+              <input type="text" id="new-house-name" placeholder="Create house (name)">
+              <button onclick="createHouse()">Create</button>
             </div>
             <div class="household-form">
-              <input type="text" id="join-house-code" placeholder="Gå med (kod)">
-              <button onclick="joinHouse()" style="background-color: #1565c0;">Gå med</button>
+              <input type="text" id="join-house-code" placeholder="Join (code)">
+              <button onclick="joinHouse()" style="background-color: #1565c0;">Join</button>
             </div>
           `;
           return;
         }
 
         const { data: house } = await db.from('households').select('*').eq('id', member.household_id).single();
-        codeDisplay.innerText = `Kod: ${house.invite_code}`;
+        codeDisplay.innerText = `Code: ${house.invite_code}`;
 
         const { data: members } = await db.from('household_members').select('user_id').eq('household_id', house.id);
         const { data: profiles } = await db.from('profiles').select('id, full_name, level, xp');
@@ -1095,7 +1154,7 @@
             const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
             html += `
               <div class="member-item">
-                <span>${medal} ${p.full_name || 'Anonym'}</span>
+                <span>${medal} ${p.full_name || 'Anonymous'}</span>
                 <span>⭐ Lvl ${p.level || 1} (${p.xp || 0} XP)</span>
               </div>
             `;
@@ -1109,7 +1168,7 @@
         const { data: topProfiles } = await db.from('profiles').select('full_name, level, xp').order('xp', { ascending: false }).limit(10);
 
         if (!topProfiles || topProfiles.length === 0) {
-          content.innerHTML = '<p style="font-size:11px; color:#aaa;">Ingen data tillgänglig.</p>';
+          content.innerHTML = '<p style="font-size:11px; color:#aaa;">No data available.</p>';
           return;
         }
 
@@ -1118,7 +1177,7 @@
           const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
           html += `
             <div class="member-item">
-              <span>${medal} ${p.full_name || 'Anonym'}</span>
+              <span>${medal} ${p.full_name || 'Anonymous'}</span>
               <span>⭐ Lvl ${p.level || 1} (${p.xp || 0} XP)</span>
             </div>
           `;
@@ -1133,7 +1192,7 @@
         const { data: profiles } = await db.from('profiles').select('id, xp');
 
         if (!households || households.length === 0) {
-          content.innerHTML = '<p style="font-size:11px; color:#aaa;">Inga hem registrerade ännu.</p>';
+          content.innerHTML = '<p style="font-size:11px; color:#aaa;">No registered houses yet.</p>';
           return;
         }
 
@@ -1155,7 +1214,7 @@
           const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
           html += `
             <div class="member-item">
-              <span>${medal} ${h.name} (${h.membersCount} st)</span>
+              <span>${medal} ${h.name} (${h.membersCount} members)</span>
               <span>✨ ${h.totalXp} XP</span>
             </div>
           `;
@@ -1171,7 +1230,7 @@
       if (!name) return;
 
       const { error } = await db.rpc('create_household', { h_name: name });
-      if (error) alert('Fel: ' + error.message);
+      if (error) alert('Error: ' + error.message);
       else renderLeaderboard();
     }
 
@@ -1181,7 +1240,7 @@
       if (!code) return;
 
       const { error } = await db.rpc('join_household', { p_code: code });
-      if (error) alert('Fel: ' + error.message);
+      if (error) alert('Error: ' + error.message);
       else renderLeaderboard();
     }
 
@@ -1200,7 +1259,7 @@
       const container = document.getElementById('habits-container');
       
       if (!habits || habits.length === 0) {
-        container.innerHTML = '<p>Inga utmaningar tillgängliga.</p>';
+        container.innerHTML = '<p>No challenges available.</p>';
         allCoreDailiesDone = true;
         return;
       }
@@ -1216,10 +1275,10 @@
       container.innerHTML = '';
 
       const sections = [
-        { key: 'core', label: '📌 Dagliga Rutiner (Core)', filter: h => h.is_core && h.quest_type === 'daily' },
-        { key: 'side', label: '🎲 Dagens Side Quests (Random)', filter: h => !h.is_core && h.quest_type === 'daily' },
-        { key: 'weekly', label: '⚔️ Veckoboss (Weekly)', filter: h => h.quest_type === 'weekly' },
-        { key: 'monthly', label: '👑 Månadsboss (Monthly)', filter: h => h.quest_type === 'monthly' }
+        { key: 'core', label: '📌 Daily Routines (Core)', filter: h => h.is_core && h.quest_type === 'daily' },
+        { key: 'side', label: '🎲 Today\'s Side Quests (Random)', filter: h => !h.is_core && h.quest_type === 'daily' },
+        { key: 'weekly', label: '⚔️ Weekly Boss (Weekly)', filter: h => h.quest_type === 'weekly' },
+        { key: 'monthly', label: '👑 Monthly Boss (Monthly)', filter: h => h.quest_type === 'monthly' }
       ];
 
       sections.forEach(sec => {
@@ -1237,8 +1296,8 @@
             div.innerHTML = `
               <span>${habit.title} (+${habit.xp_reward} XP / +${habit.coin_reward} 💰)</span>
               ${isDoneToday 
-                ? `<button class="complete-btn disabled-btn" disabled>Klar för idag! ✅</button>`
-                : `<button class="complete-btn" onclick="claimRewards('${habit.id}')">Klar!</button>`
+                ? `<button class="complete-btn disabled-btn" disabled>Completed! ✅</button>`
+                : `<button class="complete-btn" onclick="claimRewards('${habit.id}')">Complete!</button>`
               }
             `;
             container.appendChild(div);
@@ -1251,7 +1310,7 @@
       const { data, error } = await db.rpc('claim_quest_reward', { p_habit_id: habitId });
 
       if (error) {
-        alert('Fel: ' + error.message);
+        alert('Error: ' + error.message);
       } else {
         updateXpBar(data.xp, data.level);
         document.getElementById('user-coins').innerText = data.coins;
@@ -1281,6 +1340,7 @@
         document.getElementById('dashboard').style.display = 'block';
 
         await loadItemCatalog();
+        await loadCoreHabitsPool();
         initMapPanZoom();
 
         let { data: profile } = await db.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
@@ -1289,7 +1349,7 @@
           const userRole = (session.user.email && session.user.email.toLowerCase() === 'benalvida@gmail.com') ? 'admin' : 'user';
           const newProfile = {
             id: session.user.id,
-            full_name: session.user.user_metadata.full_name || 'Användare',
+            full_name: session.user.user_metadata.full_name || 'User',
             xp: 0,
             level: 1,
             coins: 0,
@@ -1310,7 +1370,7 @@
         currentUserProfile = profile;
         renderProfileUi();
 
-        // Öppna Character Creation om spelaren inte valt ras/klass ännu
+        // Open Character Creation if the user hasn't selected a race/class or habits yet
         if (!profile.race || !profile.class) {
           updateCharPreview();
           document.getElementById('char-create-modal').style.display = 'flex';
