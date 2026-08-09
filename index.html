@@ -45,6 +45,7 @@
       animation: bounce 1.5s infinite alternate; 
       cursor: pointer;
       filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); 
+      transition: left 1.2s cubic-bezier(0.25, 1, 0.5, 1), top 1.2s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
     .cloudie-name { 
@@ -891,11 +892,9 @@
       });
     }
 
-    /* MULTI-PLAYER CLOUDIE MAP ENGINE */
+    /* MULTI-PLAYER CLOUDIE MAP ENGINE (WITH SMOOTH MOVEMENT) */
     async function renderAllCloudiesOnMap() {
       const overlay = document.getElementById('cloudie-overlay');
-      overlay.innerHTML = '';
-
       if (!currentMapNodes || currentMapNodes.length === 0 || !currentUserProfile) return;
 
       let playersToShow = [];
@@ -922,32 +921,58 @@
         playersToShow = [currentUserProfile];
       }
 
+      const activeUserIds = new Set(playersToShow.map(p => p.id));
+      Array.from(overlay.children).forEach(child => {
+        const childUserId = child.getAttribute('data-user-id');
+        if (childUserId && !activeUserIds.has(childUserId)) {
+          child.remove();
+        }
+      });
+
       playersToShow.forEach(player => {
         const playerNodeNum = player.map_node || 1;
         const targetNode = currentMapNodes.find(n => n.node === playerNodeNum) || currentMapNodes[0];
 
         if (targetNode) {
           const isMe = player.id === currentUser.id;
-          const marker = document.createElement('div');
-          marker.className = 'cloudie-marker';
           
-          const offsetX = (Math.random() - 0.5) * 2; 
-          const offsetY = (Math.random() - 0.5) * 2;
+          const hash = player.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          const offsetX = ((hash % 7) - 3) * 0.8; 
+          const offsetY = (((hash >> 2) % 7) - 3) * 0.8;
 
-          marker.style.left = `${targetNode.x + offsetX}%`;
-          marker.style.top = `${targetNode.y + offsetY}%`;
-          
-          if (isMe) marker.style.zIndex = '8';
+          const targetX = targetNode.x + offsetX;
+          const targetY = targetNode.y + offsetY;
 
-          const displayName = isMe ? `${player.full_name || 'You'} (You)` : (player.full_name || 'Player');
-          const avatarSvg = renderCloudieSVG(player.avatar_config, 40);
+          let marker = overlay.querySelector(`[data-user-id="${player.id}"]`);
 
-          marker.innerHTML = `
-            <div class="cloudie-name">${displayName} • Node ${playerNodeNum}</div>
-            ${avatarSvg}
-          `;
+          if (!marker) {
+            marker = document.createElement('div');
+            marker.className = 'cloudie-marker';
+            marker.setAttribute('data-user-id', player.id);
 
-          overlay.appendChild(marker);
+            if (isMe) marker.style.zIndex = '8';
+
+            const displayName = isMe ? `${player.full_name || 'You'} (You)` : (player.full_name || 'Player');
+            const avatarSvg = renderCloudieSVG(player.avatar_config, 40);
+
+            marker.innerHTML = `
+              <div class="cloudie-name">${displayName} • Node ${playerNodeNum}</div>
+              ${avatarSvg}
+            `;
+
+            marker.style.left = `${targetX}%`;
+            marker.style.top = `${targetY}%`;
+            overlay.appendChild(marker);
+          } else {
+            marker.style.left = `${targetX}%`;
+            marker.style.top = `${targetY}%`;
+
+            const nameDiv = marker.querySelector('.cloudie-name');
+            if (nameDiv) {
+              const displayName = isMe ? `${player.full_name || 'You'} (You)` : (player.full_name || 'Player');
+              nameDiv.innerText = `${displayName} • Node ${playerNodeNum}`;
+            }
+          }
         }
       });
     }
