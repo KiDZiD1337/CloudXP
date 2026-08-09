@@ -1635,8 +1635,8 @@
       const sections = [
         { key: 'core', label: '📌 Daily Routines (Core)', filter: h => h.is_core && h.quest_type === 'daily' },
         { key: 'side', label: '🎲 Today\'s Side Quests (Random)', filter: h => !h.is_core && h.quest_type === 'daily' },
-        { key: 'weekly', label: '⚔️ Weekly Boss (Weekly)', filter: h => h.quest_type === 'weekly' },
-        { key: 'monthly', label: '👑 Monthly Boss (Monthly)', filter: h => h.quest_type === 'monthly' }
+        { key: 'weekly', label: '⚔️ Weekly Tasks (Weekly)', filter: h => h.quest_type === 'weekly' },
+        { key: 'monthly', label: '👑 Monthly Tasks (Monthly)', filter: h => h.quest_type === 'monthly' }
       ];
 
       sections.forEach(sec => {
