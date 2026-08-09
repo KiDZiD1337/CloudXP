@@ -24,6 +24,7 @@
     .map-node-interactive.type-branch { background: #2196f3; color: white; }
     .map-node-interactive.type-shop { background: #4caf50; color: white; }
     .map-node-interactive.type-gate { background: #f44336; color: white; }
+    .map-node-interactive.type-boss { background: #9c27b0; color: white; border-color: #ffeb3b; }
     .map-node-interactive.is-current { animation: pulse 1.5s infinite alternate; }
 
     @keyframes pulse {
@@ -64,6 +65,8 @@
 
     button.primary-btn { background-color: #4285F4; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
     button.primary-btn:hover { background-color: #357ae8; }
+    button.danger-btn { background-color: #d32f2f; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+    button.danger-btn:hover { background-color: #b71c1c; }
     
     .stats-bar { display: flex; justify-content: space-around; background: #2a2a2a; padding: 10px; border-radius: 8px; margin-top: 0.8rem; font-weight: bold; font-size: 13px; text-align: center; }
     
@@ -435,10 +438,14 @@
       currentMapNodes.forEach(n => {
         const pin = document.createElement('div');
         const isCurrent = currentUserProfile && currentUserProfile.map_node === n.node;
-        pin.className = `map-node-interactive type-${n.type || 'standard'} ${isCurrent ? 'is-current' : ''}`;
+        
+        let nodeType = n.type || 'standard';
+        if (n.node === 11) nodeType = 'boss';
+
+        pin.className = `map-node-interactive type-${nodeType} ${isCurrent ? 'is-current' : ''}`;
         pin.style.left = `${n.x}%`;
         pin.style.top = `${n.y}%`;
-        pin.innerText = n.node;
+        pin.innerText = n.node === 11 ? '👑' : n.node;
         pin.onclick = (e) => {
           e.stopPropagation();
           handleNodeClick(n);
@@ -475,7 +482,8 @@
       const userXp = currentUserProfile ? currentUserProfile.current_month_xp : 0;
       const inventory = currentUserProfile ? (currentUserProfile.inventory || []) : [];
 
-      title.innerText = `📍 Nod ${node.node} (${node.type ? node.type.toUpperCase() : 'STANDARD'})`;
+      const nodeTypeLabel = node.node === 11 ? 'BOSS' : (node.type ? node.type.toUpperCase() : 'STANDARD');
+      title.innerText = `📍 Nod ${node.node} (${nodeTypeLabel})`;
       actions.innerHTML = '';
 
       if (userNode !== node.node) {
@@ -494,7 +502,16 @@
         }
       } 
       else {
-        if (node.type === 'shop') {
+        if (node.node === 11 || node.type === 'boss') {
+          desc.innerText = `⚔️ Du står inför Månadsbossen på Nod 11! Är du redo att strida? Om du förlorar skickas du tillbaka till Nod 1 för att träna mer!`;
+          
+          const fightBtn = document.createElement('button');
+          fightBtn.className = 'danger-btn';
+          fightBtn.innerText = `Utmana Bossen! 🗡️`;
+          fightBtn.onclick = () => challengeBoss();
+          actions.appendChild(fightBtn);
+
+        } else if (node.type === 'shop') {
           desc.innerText = `Välkommen till butiken! Här kan du köpa "${node.shop_item_name || 'Okänd pryl'}" för ${node.shop_item_cost || 100} Coins.`;
           
           const buyBtn = document.createElement('button');
@@ -553,6 +570,35 @@
       actions.appendChild(closeBtn);
 
       modal.style.display = 'flex';
+    }
+
+    async function challengeBoss() {
+      const modal = document.getElementById('node-modal');
+      const inventory = currentUserProfile ? (currentUserProfile.inventory || []) : [];
+      const userLevel = currentUserProfile ? currentUserProfile.level : 1;
+
+      const hasRequiredItem = inventory.includes('Slottets Nyckel') || inventory.includes('Magisk Dryck');
+      
+      if (userLevel >= 5 || hasRequiredItem) {
+        alert('🎉 GRATTIS! Du besegrade Månadsbossen och har slutfört månadens äventyr!');
+        modal.style.display = 'none';
+      } else {
+        alert('💥 Bossen var för stark! Du förlorade striden och kastingas tillbaka till startpunkten på Nod 1.');
+        await resetToNodeOne();
+      }
+    }
+
+    async function resetToNodeOne() {
+      const { error } = await db.from('profiles').update({ map_node: 1 }).eq('id', currentUser.id);
+      if (error) {
+        alert('Fel vid återställning: ' + error.message);
+      } else {
+        currentUserProfile.map_node = 1;
+        renderNodesOnMap();
+        renderCloudieOnNode(1);
+        centerOnNode(1);
+        document.getElementById('node-modal').style.display = 'none';
+      }
     }
 
     async function executeBuyItem(itemName, cost) {
