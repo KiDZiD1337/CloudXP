@@ -377,10 +377,18 @@
 
       container.innerHTML = coreHabitsPool.map(h => `
         <div class="habit-picker-item">
-          <input type="checkbox" name="selected-core-habit" value="${h.id}" id="habit-chk-${h.id}">
+          <input type="checkbox" name="selected-core-habit" value="${h.id}" id="habit-chk-${h.id}" onchange="handleHabitSelection(this)">
           <label for="habit-chk-${h.id}">${h.title} (+${h.xp_reward} XP)</label>
         </div>
       `).join('');
+    }
+
+    function handleHabitSelection(checkbox) {
+      const checkedCount = document.querySelectorAll('input[name="selected-core-habit"]:checked').length;
+      if (checkedCount > 3) {
+        checkbox.checked = false;
+        alert('You can only select up to 3 Core Habits!');
+      }
     }
 
     /* ==========================================
