@@ -222,7 +222,6 @@
     function initMapPanZoom() {
       const viewport = document.getElementById('map-viewport');
 
-      // Desktop Mus-händelser
       viewport.addEventListener('mousedown', (e) => {
         if (e.target.closest('.card') || e.target.closest('.map-controls') || e.target.closest('.modal-card')) return;
         isDragging = true;
@@ -239,7 +238,6 @@
 
       window.addEventListener('mouseup', () => { isDragging = false; });
 
-      // Mobil Touch-händelser
       viewport.addEventListener('touchstart', (e) => {
         if (e.target.closest('.card') || e.target.closest('.map-controls') || e.target.closest('.modal-card')) return;
 
@@ -438,14 +436,12 @@
       currentMapNodes.forEach(n => {
         const pin = document.createElement('div');
         const isCurrent = currentUserProfile && currentUserProfile.map_node === n.node;
-        
-        let nodeType = n.type || 'standard';
-        if (n.node === 11) nodeType = 'boss';
+        const nodeType = n.type || 'standard';
 
         pin.className = `map-node-interactive type-${nodeType} ${isCurrent ? 'is-current' : ''}`;
         pin.style.left = `${n.x}%`;
         pin.style.top = `${n.y}%`;
-        pin.innerText = n.node === 11 ? '👑' : n.node;
+        pin.innerText = nodeType === 'boss' ? '👑' : n.node;
         pin.onclick = (e) => {
           e.stopPropagation();
           handleNodeClick(n);
@@ -482,7 +478,7 @@
       const userXp = currentUserProfile ? currentUserProfile.current_month_xp : 0;
       const inventory = currentUserProfile ? (currentUserProfile.inventory || []) : [];
 
-      const nodeTypeLabel = node.node === 11 ? 'BOSS' : (node.type ? node.type.toUpperCase() : 'STANDARD');
+      const nodeTypeLabel = node.type ? node.type.toUpperCase() : 'STANDARD';
       title.innerText = `📍 Nod ${node.node} (${nodeTypeLabel})`;
       actions.innerHTML = '';
 
@@ -502,8 +498,8 @@
         }
       } 
       else {
-        if (node.node === 11 || node.type === 'boss') {
-          desc.innerText = `⚔️ Du står inför Månadsbossen på Nod 11! Är du redo att strida? Om du förlorar skickas du tillbaka till Nod 1 för att träna mer!`;
+        if (node.type === 'boss') {
+          desc.innerText = `⚔️ Du står inför Månadsbossen på Nod ${node.node}! Är du redo att strida? Om du förlorar skickas du tillbaka till Nod 1 för att träna mer!`;
           
           const fightBtn = document.createElement('button');
           fightBtn.className = 'danger-btn';
@@ -583,7 +579,7 @@
         alert('🎉 GRATTIS! Du besegrade Månadsbossen och har slutfört månadens äventyr!');
         modal.style.display = 'none';
       } else {
-        alert('💥 Bossen var för stark! Du förlorade striden och kastingas tillbaka till startpunkten på Nod 1.');
+        alert('💥 Bossen var för stark! Du förlorade striden och kastas tillbaka till startpunkten på Nod 1.');
         await resetToNodeOne();
       }
     }

@@ -47,6 +47,7 @@
     .node-pin.type-shop { background: #2e7d32; color: white; }
     .node-pin.type-branch { background: #1565c0; color: white; }
     .node-pin.type-gate { background: #c62828; color: white; }
+    .node-pin.type-boss { background: #9c27b0; color: white; border-color: #ffeb3b; }
 
     /* Modal / Konfigurationspanel för valda noder */
     .node-editor { background: #2a2a2a; padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px solid #444; }
@@ -81,7 +82,7 @@
       
       <!-- Nod-Karterare för Månadens Karta -->
       <div class="admin-card">
-        <h2>🗺️ Hantera Månadens Karta & Events (Shops, Gates & Branch)</h2>
+        <h2>🗺️ Hantera Månadens Karta & Events (Shops, Gates, Branch & Boss)</h2>
         <div class="form-row">
           <div class="form-group" style="flex: 1;">
             <label>Månadsnyckel (ÅÅÅÅ-MM):</label>
@@ -117,6 +118,7 @@
                   <option value="branch">🔀 Vägskäl (Grenar ut till flera noder)</option>
                   <option value="shop">🛒 Shop / Butik (Event)</option>
                   <option value="gate">🔒 Låst Port (Kräver Item / Nyckel)</option>
+                  <option value="boss">👑 Boss Battle (Månadsboss / Event)</option>
                 </select>
               </div>
               <div class="form-group" style="flex: 1;">
@@ -518,10 +520,11 @@
 
       mapNodes.forEach((n, idx) => {
         const pin = document.createElement('div');
-        pin.className = `node-pin type-${n.type || 'standard'}`;
+        const nodeType = n.type || 'standard';
+        pin.className = `node-pin type-${nodeType}`;
         pin.style.left = `${n.x}%`;
         pin.style.top = `${n.y}%`;
-        pin.innerText = n.node;
+        pin.innerText = nodeType === 'boss' ? '👑' : n.node;
         pin.setAttribute('data-index', idx);
         overlay.appendChild(pin);
       });
