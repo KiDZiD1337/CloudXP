@@ -36,8 +36,8 @@
     .map-controls button { background: #333; color: white; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
     .map-controls button:hover { background: #444; }
 
-    .cloudie-marker { position: absolute; width: 36px; height: 36px; background: #ff9800; border: 3px solid #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; transform: translate(-50%, -100%); box-shadow: 0 4px 10px rgba(0,0,0,0.8); z-index: 6; animation: bounce 1.5s infinite alternate; pointer-events: none; }
-    .cloudie-name { position: absolute; top: -20px; background: rgba(0,0,0,0.8); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; white-space: nowrap; }
+    .cloudie-marker { position: absolute; width: 44px; height: 44px; transform: translate(-50%, -100%); z-index: 6; animation: bounce 1.5s infinite alternate; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); }
+    .cloudie-name { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; white-space: nowrap; }
 
     @keyframes bounce {
       0% { transform: translate(-50%, -100%); }
@@ -51,7 +51,7 @@
     .leaderboard-widget { position: absolute; bottom: 1rem; right: 1rem; width: 320px; max-height: 480px; overflow-y: auto; }
 
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; }
-    .modal-card { background: #1e1e1e; padding: 1.8rem; border-radius: 12px; border: 1px solid #444; max-width: 460px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.8); text-align: center; }
+    .modal-card { background: #1e1e1e; padding: 1.8rem; border-radius: 12px; border: 1px solid #444; max-width: 480px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.8); text-align: center; }
     .modal-card h3 { margin-top: 0; color: #ff9800; font-size: 20px; }
     .modal-card p { font-size: 14px; color: #ccc; margin-bottom: 1.5rem; }
     .modal-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
@@ -65,13 +65,14 @@
     .hp-boss { background: #f44336; }
     .battle-log { background: #0d001a; border: 1px solid #4a148c; height: 110px; overflow-y: auto; border-radius: 6px; padding: 8px; font-size: 11px; text-align: left; color: #e1bee7; margin: 1rem 0; font-family: monospace; }
 
-    /* CHARACTER CREATION STYLING */
-    .char-select-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
-    .select-btn { background: #2a2a2a; border: 1px solid #444; color: white; padding: 10px 4px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    /* CHARACTER CREATION & AVATAR BUILDER STYLING */
+    .avatar-preview-box { width: 90px; height: 90px; background: #121212; border: 2px solid #ff9800; border-radius: 50%; margin: 0 auto 1rem auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(255,152,0,0.3); }
+    .char-select-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 0.8rem; }
+    .select-btn { background: #2a2a2a; border: 1px solid #444; color: white; padding: 8px 4px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; }
     .select-btn.active { border-color: #ff9800; background: #4a148c; }
-    .stats-preview { background: #121212; padding: 10px; border-radius: 6px; text-align: left; font-size: 11px; margin-bottom: 1rem; border: 1px solid #333; }
+    .stats-preview { background: #121212; padding: 8px; border-radius: 6px; text-align: left; font-size: 11px; margin-bottom: 0.8rem; border: 1px solid #333; }
     .attribute-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; font-size: 11px; background: #121212; padding: 8px; border-radius: 6px; border: 1px solid #333; }
-    .habit-picker-box { text-align: left; background: #121212; padding: 10px; border-radius: 6px; border: 1px solid #333; margin-bottom: 1rem; max-height: 140px; overflow-y: auto; }
+    .habit-picker-box { text-align: left; background: #121212; padding: 10px; border-radius: 6px; border: 1px solid #333; margin-bottom: 1rem; max-height: 120px; overflow-y: auto; }
     .habit-picker-item { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 4px 0; border-bottom: 1px solid #222; }
 
     @media (max-width: 820px) {
@@ -134,17 +135,54 @@
   <!-- CHARACTER CREATION MODAL -->
   <div id="char-create-modal" class="modal-overlay">
     <div class="modal-card">
-      <h2 style="color: #ff9800; margin-top: 0;">🌩️ Create Your Cloudie</h2>
-      <p style="font-size: 12px; color: #aaa;">Select Race, Class & 3 Daily Core Habits to shape your stats and daily journey!</p>
-
-      <div style="text-align: left; font-size: 12px; font-weight: bold; margin-bottom: 4px;">1. Choose Race:</div>
-      <div class="char-select-grid">
-        <button class="select-btn active" onclick="selectRace('Nimbus', this)">🌩️ Nimbus<br><span style="font-weight:normal; font-size:10px;">+AGI / Evasion</span></button>
-        <button class="select-btn" onclick="selectRace('Stratus', this)">⚡ Stratus<br><span style="font-weight:normal; font-size:10px;">+INT / Crit</span></button>
-        <button class="select-btn" onclick="selectRace('Cumulus', this)">🌧️ Cumulus<br><span style="font-weight:normal; font-size:10px;">+CON / HP</span></button>
+      <h2 style="color: #ff9800; margin-top: 0;">🌩️ Design Your Cloudie</h2>
+      
+      <!-- LIVE AVATAR PREVIEW -->
+      <div class="avatar-preview-box" id="avatar-preview-container">
+        <!-- SVG rendered dynamically -->
       </div>
 
-      <div style="text-align: left; font-size: 12px; font-weight: bold; margin-bottom: 4px;">2. Choose Class:</div>
+      <!-- AVATAR DESIGNER CONTROLS -->
+      <div style="text-align: left; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #ff8a80;">1. Customize Appearance:</div>
+      
+      <div style="font-size: 10px; color: #aaa; text-align: left; margin-bottom: 2px;">Cloud Tint:</div>
+      <div class="char-select-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <button class="select-btn active" onclick="selectAvatarAttr('color', '#ffffff', this)">🤍 White</button>
+        <button class="select-btn" onclick="selectAvatarAttr('color', '#90caf9', this)">💙 Sky</button>
+        <button class="select-btn" onclick="selectAvatarAttr('color', '#ce93d8', this)">💜 Arcane</button>
+        <button class="select-btn" onclick="selectAvatarAttr('color', '#fff59d', this)">💛 Golden</button>
+      </div>
+
+      <div style="font-size: 10px; color: #aaa; text-align: left; margin-bottom: 2px;">Headgear / Hair:</div>
+      <div class="char-select-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <button class="select-btn active" onclick="selectAvatarAttr('hair', 'none', this)">❌ None</button>
+        <button class="select-btn" onclick="selectAvatarAttr('hair', 'wizard', this)">🧙 Wizard</button>
+        <button class="select-btn" onclick="selectAvatarAttr('hair', 'crown', this)">👑 Crown</button>
+        <button class="select-btn" onclick="selectAvatarAttr('hair', 'spiky', this)">⚡ Spiky</button>
+      </div>
+
+      <div style="font-size: 10px; color: #aaa; text-align: left; margin-bottom: 2px;">Upper Body Gear:</div>
+      <div class="char-select-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <button class="select-btn active" onclick="selectAvatarAttr('upper', 'none', this)">❌ None</button>
+        <button class="select-btn" onclick="selectAvatarAttr('upper', 'armor', this)">🛡️ Chestplate</button>
+        <button class="select-btn" onclick="selectAvatarAttr('upper', 'cloak', this)">🧥 Cloak</button>
+      </div>
+
+      <div style="font-size: 10px; color: #aaa; text-align: left; margin-bottom: 2px;">Lower Body Gear:</div>
+      <div class="char-select-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <button class="select-btn active" onclick="selectAvatarAttr('lower', 'none', this)">❌ None</button>
+        <button class="select-btn" onclick="selectAvatarAttr('lower', 'boots', this)">👟 Boots</button>
+        <button class="select-btn" onclick="selectAvatarAttr('lower', 'skirt', this)">🥋 Robe Skirt</button>
+      </div>
+
+      <!-- RACE & CLASS SELECTION -->
+      <div style="text-align: left; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #ff8a80;">2. Race & Class:</div>
+      <div class="char-select-grid">
+        <button class="select-btn active" onclick="selectRace('Nimbus', this)">🌩️ Nimbus</button>
+        <button class="select-btn" onclick="selectRace('Stratus', this)">⚡ Stratus</button>
+        <button class="select-btn" onclick="selectRace('Cumulus', this)">🌧️ Cumulus</button>
+      </div>
+
       <div class="char-select-grid" style="grid-template-columns: repeat(3, 1fr);">
         <button class="select-btn active" onclick="selectClass('Warrior', this)">⚔️ Warrior</button>
         <button class="select-btn" onclick="selectClass('Ranger', this)">🏹 Ranger</button>
@@ -157,7 +195,7 @@
         Loading stats preview...
       </div>
 
-      <div style="text-align: left; font-size: 12px; font-weight: bold; margin-bottom: 4px;">3. Select 3 Core Habits for your Daily Streak:</div>
+      <div style="text-align: left; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #ff8a80;">3. Select 3 Core Habits:</div>
       <div id="habit-picker-container" class="habit-picker-box">
         Loading core habits pool...
       </div>
@@ -245,9 +283,12 @@
   <div id="dashboard" class="viewport-overlay">
     
     <div class="card profile-widget">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 id="user-name" style="margin: 0; font-size: 18px;">Welcome!</h2>
-        <span id="user-race-class" style="font-size: 11px; background: #4a148c; padding: 2px 8px; border-radius: 12px; font-weight: bold;"></span>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div id="profile-avatar-icon" style="width: 50px; height: 50px; background: #121212; border-radius: 50%; border: 1px solid #444; display: flex; align-items: center; justify-content: center;"></div>
+        <div>
+          <h2 id="user-name" style="margin: 0; font-size: 16px;">Welcome!</h2>
+          <span id="user-race-class" style="font-size: 11px; background: #4a148c; padding: 2px 8px; border-radius: 12px; font-weight: bold;"></span>
+        </div>
       </div>
       
       <div class="stats-bar">
@@ -322,7 +363,8 @@
     
     let allCoreDailiesDone = false;
 
-    // Selected Character Creation State
+    // Avatar & Character Creation State
+    let selectedAvatarConfig = { color: '#ffffff', hair: 'none', upper: 'none', lower: 'none' };
     let selectedRace = 'Nimbus';
     let selectedClass = 'Warrior';
 
@@ -356,6 +398,77 @@
       await db.auth.signOut();
       window.location.reload();
     });
+
+    /* ==========================================
+       SVG CLOUDIE AVATAR BUILDER ENGINE
+       ========================================== */
+    function renderCloudieSVG(config, size = 60) {
+      const c = config || { color: '#ffffff', hair: 'none', upper: 'none', lower: 'none' };
+      const cloudColor = c.color || '#ffffff';
+
+      let hairSvg = '';
+      if (c.hair === 'wizard') {
+        hairSvg = `<path d="M 25,22 L 50,2 L 75,22 Z" fill="#4a148c" /><rect x="20" y="20" width="60" height="4" fill="#7b1fa2" rx="2" />`;
+      } else if (c.hair === 'crown') {
+        hairSvg = `<path d="M 30,22 L 35,10 L 50,18 L 65,10 L 70,22 Z" fill="#ffd700" stroke="#ff8f00" stroke-width="1" />`;
+      } else if (c.hair === 'spiky') {
+        hairSvg = `<path d="M 30,22 L 38,8 L 46,20 L 54,8 L 62,20 L 70,12 L 72,22 Z" fill="#ff9800" />`;
+      }
+
+      let upperSvg = '';
+      if (c.upper === 'armor') {
+        upperSvg = `<rect x="35" y="52" width="30" height="18" fill="#78909c" rx="3" stroke="#37474f" stroke-width="1.5" /><line x1="50" y1="52" x2="50" y2="70" stroke="#37474f" stroke-width="1.5" />`;
+      } else if (c.upper === 'cloak') {
+        upperSvg = `<path d="M 28,45 Q 50,55 72,45 L 76,75 Q 50,80 24,75 Z" fill="#c62828" />`;
+      }
+
+      let lowerSvg = '';
+      if (c.lower === 'boots') {
+        lowerSvg = `<ellipse cx="38" cy="78" rx="7" ry="4" fill="#3e2723" /><ellipse cx="62" cy="78" rx="7" ry="4" fill="#3e2723" />`;
+      } else if (c.lower === 'skirt') {
+        lowerSvg = `<path d="M 32,68 L 68,68 L 74,82 L 26,82 Z" fill="#1b5e20" />`;
+      }
+
+      return `
+        <svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <!-- LOWER GEAR -->
+          ${lowerSvg}
+
+          <!-- CLOUD BODY (BASE HEAD) -->
+          <path d="M 30,60 
+                   A 18,18 0 0,1 35,28 
+                   A 22,22 0 0,1 65,28 
+                   A 18,18 0 0,1 70,60 
+                   A 15,15 0 0,1 30,60 Z" 
+                fill="${cloudColor}" stroke="#333" stroke-width="2.5" />
+
+          <!-- EYES & EXPRESSION -->
+          <circle cx="42" cy="42" r="3.5" fill="#121212" />
+          <circle cx="58" cy="42" r="3.5" fill="#121212" />
+          <path d="M 45,50 Q 50,55 55,50" fill="none" stroke="#121212" stroke-width="2" stroke-linecap="round" />
+
+          <!-- UPPER GEAR -->
+          ${upperSvg}
+
+          <!-- HAIR / HEADGEAR -->
+          ${hairSvg}
+        </svg>
+      `;
+    }
+
+    function updateAvatarPreview() {
+      const container = document.getElementById('avatar-preview-container');
+      if (container) {
+        container.innerHTML = renderCloudieSVG(selectedAvatarConfig, 75);
+      }
+    }
+
+    function selectAvatarAttr(type, value, btn) {
+      selectedAvatarConfig[type] = value;
+      btn.parentElement.querySelectorAll('.select-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateAvatarPreview();
+    }
 
     async function loadItemCatalog() {
       const { data } = await db.from('item_pool').select('*');
@@ -457,7 +570,8 @@
         con: stats.con,
         agi: stats.agi,
         current_mp: 50 + (stats.wis * 5),
-        max_mp: 50 + (stats.wis * 5)
+        max_mp: 50 + (stats.wis * 5),
+        avatar_config: selectedAvatarConfig
       };
 
       const { error } = await db.from('profiles').update(updates).eq('id', currentUser.id);
@@ -488,6 +602,7 @@
 
       Object.assign(currentUserProfile, updates);
       renderProfileUi();
+      renderCloudieOnNode(currentUserProfile.map_node || 1);
       loadHabits(currentUser.id);
       document.getElementById('char-create-modal').style.display = 'none';
     }
@@ -505,6 +620,9 @@
       document.getElementById('stat-wis').innerText = p.wis || 10;
       document.getElementById('stat-con').innerText = p.con || 10;
       document.getElementById('stat-agi').innerText = p.agi || 10;
+
+      // Render Avatar in Profile Card
+      document.getElementById('profile-avatar-icon').innerHTML = renderCloudieSVG(p.avatar_config, 45);
 
       updateXpBar(p.xp || 0, p.level || 1);
       renderInventory(p.inventory || []);
@@ -754,7 +872,9 @@
         marker.className = 'cloudie-marker';
         marker.style.left = `${targetNode.x}%`;
         marker.style.top = `${targetNode.y}%`;
-        marker.innerHTML = `<div class="cloudie-name">You (Node ${nodeNum})</div>☁️`;
+        
+        const avatarSvg = renderCloudieSVG(currentUserProfile?.avatar_config, 40);
+        marker.innerHTML = `<div class="cloudie-name">You (Node ${nodeNum})</div>${avatarSvg}`;
         overlay.appendChild(marker);
       }
     }
@@ -922,7 +1042,6 @@
       const p = currentUserProfile || {};
       const mainStat = p.class === 'Ranger' || p.class === 'Rogue' ? (p.dex || 10) : (p.str || 10);
       
-      // Accuracy / Hit Chance Calculation
       const hitChance = 0.75 + (mainStat * 0.015) - ((currentBossNode?.node || 1) * 0.02);
       const isHit = Math.random() < hitChance;
 
@@ -939,7 +1058,6 @@
 
         let totalDmg = Math.floor(baseDmg + gearBonus + (Math.random() * 8));
 
-        // Crit Chance (Dex Modifier)
         const critChance = 0.10 + ((p.dex || 10) * 0.01);
         const isCrit = Math.random() < critChance;
         if (isCrit) totalDmg = Math.floor(totalDmg * 2);
@@ -1002,7 +1120,6 @@
         const p = currentUserProfile || {};
         const agiVal = p.agi || 10;
         
-        // Evasion Chance based on Agility
         const dodgeChance = 0.05 + (agiVal * 0.015);
         const isDodged = Math.random() < dodgeChance;
 
@@ -1365,7 +1482,8 @@
             current_month_xp: 0,
             map_node: 1,
             inventory: [],
-            role: userRole
+            role: userRole,
+            avatar_config: selectedAvatarConfig
           };
 
           await db.from('profiles').upsert(newProfile);
@@ -1376,11 +1494,14 @@
         }
 
         currentUserProfile = profile;
+        if (profile.avatar_config) selectedAvatarConfig = profile.avatar_config;
+
         renderProfileUi();
 
         // Open Character Creation if the user hasn't selected a race/class or habits yet
         if (!profile.race || !profile.class) {
           updateCharPreview();
+          updateAvatarPreview();
           document.getElementById('char-create-modal').style.display = 'flex';
         }
 
