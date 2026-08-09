@@ -192,6 +192,9 @@
     let currentUserProfile = null;
     let activeTab = 'house';
     let currentMapNodes = [];
+    
+    // Global flagga för att se om dagens core-uppgifter är klara
+    let allCoreDailiesDone = false;
 
     let scale = 1;
     let minScale = 1;
@@ -394,7 +397,7 @@
       title.innerText = `📍 Nod ${node.node} (${node.type ? node.type.toUpperCase() : 'STANDARD'})`;
       actions.innerHTML = '';
 
-      // Steg 1: Om spelaren inte står på denna nod än, erbjud möjlighet att flytta hit först
+      // Steg 1: Förflyttning - Om spelaren inte står på denna nod än
       if (userNode !== node.node) {
         const canReach = userXp >= (node.required_xp || 0);
 
@@ -410,7 +413,7 @@
           desc.innerText = `🔒 Du kan inte flytta hit ännu. Nod ${node.node} kräver ${node.required_xp || 0} XP (du har ${userXp} XP).`;
         }
       } 
-      // Steg 2: Om spelaren FAKTISKT STÅR på denna nod, hantera nodens specifika händelse
+      // Steg 2: Interaktion - Om spelaren står på noden
       else {
         if (node.type === 'shop') {
           desc.innerText = `Välkommen till butiken! Här kan du köpa "${node.shop_item_name || 'Okänd pryl'}" för ${node.shop_item_cost || 100} Coins.`;
@@ -422,15 +425,18 @@
           actions.appendChild(buyBtn);
 
         } else if (node.type === 'branch') {
-          desc.innerText = `You have come to a fork in the road. Choose wisely.`;
-          
-          (node.next_nodes || []).forEach(nextId => {
-            const btn = document.createElement('button');
-            btn.className = 'primary-btn';
-            btn.innerText = `Gå vidare till Nod ${nextId} ➡️`;
-            btn.onclick = () => moveToNode(nextId);
-            actions.appendChild(btn);
-          });
+          if (allCoreDailiesDone) {
+            desc.innerText = `You have come to a fork in the road. Choose wisely.`;
+            (node.next_nodes || []).forEach(nextId => {
+              const btn = document.createElement('button');
+              btn.className = 'primary-btn';
+              btn.innerText = `Gå vidare till Nod ${nextId} ➡️`;
+              btn.onclick = () => moveToNode(nextId);
+              actions.appendChild(btn);
+            });
+          } else {
+            desc.innerText = `🔀 Du står vid ett vägskäl, men du måste slutföra dina dagliga rutiner (Core Quests) innan du kan välja väg!`;
+          }
 
         } else if (node.type === 'gate') {
           const hasItem = inventory.includes(node.required_item);
@@ -448,7 +454,11 @@
           }
 
         } else {
-          desc.innerText = `Du befinner dig på Nod ${node.node}. Du har samlat ihop tillräckligt med XP och kan röra dig vidare när du är redo.`;
+          if (allCoreDailiesDone) {
+             desc.innerText = `Du befinner dig på Nod ${node.node}. Alla dagliga rutiner är klara! Du är redo att gå vidare när du vill.`;
+          } else {
+             desc.innerText = `Du befinner dig på Nod ${node.node}. Gör klart dina dagliga rutiner för att samla XP och kunna resa vidare!`;
+          }
         }
       }
 
@@ -488,12 +498,8 @@
         currentUserProfile.map_node = newNodeId;
         renderNodesOnMap();
         renderCloudieOnNode(newNodeId);
+        // Stänger endast rutan och tvingar inte fram nodhändelsen. Man landar på noden.
         document.getElementById('node-modal').style.display = 'none';
-
-        const targetNode = currentMapNodes.find(n => n.node === newNodeId);
-        if (targetNode) {
-          handleNodeClick(targetNode);
-        }
       }
     }
 
@@ -650,7 +656,17 @@
       
       if (!habits || habits.length === 0) {
         container.innerHTML = '<p>Inga utmaningar tillgängliga.</p>';
+        allCoreDailiesDone = true;
         return;
+      }
+
+      // Kontrollera om alla Core Quests är klara för dagen
+      const coreHabits = habits.filter(h => h.is_core && h.quest_type === 'daily');
+      if (coreHabits.length > 0) {
+        const pendingCore = coreHabits.filter(h => !completedHabitIds.has(h.id));
+        allCoreDailiesDone = pendingCore.length === 0;
+      } else {
+        allCoreDailiesDone = true;
       }
 
       container.innerHTML = '';
