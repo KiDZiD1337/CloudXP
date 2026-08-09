@@ -1,65 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CloudXP</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * { box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 0; min-height: 100vh; overflow: hidden; }
-    
-    .login-container { text-align: center; background: #1e1e1e; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); max-width: 400px; width: 90%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; }
+    * {
+      box-sizing: border-box;
+    }
 
-    .map-viewport { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; overflow: hidden; background: #121212; cursor: grab; touch-action: none; }
-    .map-viewport:active { cursor: grabbing; }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      overflow: hidden;
+    }
 
-    .map-container { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
-    .map-image { display: block; max-width: none; user-select: none; pointer-events: none; min-width: 800px; min-height: 600px; }
+    .login-container {
+      text-align: center;
+      background: #1e1e1e;
+      padding: 2.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      max-width: 400px;
+      width: 90%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 100;
+    }
 
-    .map-node-interactive { position: absolute; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: black; border: 2px solid #ffffff; transform: translate(-50%, -50%); cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.8); z-index: 4; transition: transform 0.2s, box-shadow 0.2s; }
-    .map-node-interactive:hover { transform: translate(-50%, -50%) scale(1.25); z-index: 10; }
-    
-    .map-node-interactive.type-standard { background: #ffeb3b; }
-    .map-node-interactive.type-branch { background: #2196f3; color: white; }
-    .map-node-interactive.type-shop { background: #4caf50; color: white; }
-    .map-node-interactive.type-gate { background: #f44336; color: white; }
-    .map-node-interactive.type-boss { background: #9c27b0; color: white; border-color: #ffeb3b; }
-    .map-node-interactive.is-current { animation: pulse 1.5s infinite alternate; }
+    .map-viewport {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      overflow: hidden;
+      background: #121212;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .map-viewport:active {
+      cursor: grabbing;
+    }
+
+    .map-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+    }
+
+    .map-image {
+      display: block;
+      max-width: none;
+      user-select: none;
+      pointer-events: none;
+      min-width: 800px;
+      min-height: 600px;
+    }
+
+    .map-node-interactive {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      color: black;
+      border: 2px solid #ffffff;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
+      z-index: 4;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .map-node-interactive:hover {
+      transform: translate(-50%, -50%) scale(1.25);
+      z-index: 10;
+    }
+
+    .map-node-interactive.type-standard {
+      background: #ffeb3b;
+    }
+
+    .map-node-interactive.type-branch {
+      background: #2196f3;
+      color: white;
+    }
+
+    .map-node-interactive.type-shop {
+      background: #4caf50;
+      color: white;
+    }
+
+    .map-node-interactive.type-gate {
+      background: #f44336;
+      color: white;
+    }
+
+    .map-node-interactive.type-boss {
+      background: #9c27b0;
+      color: white;
+      border-color: #ffeb3b;
+    }
+
+    .map-node-interactive.is-current {
+      animation: pulse 1.5s infinite alternate;
+    }
 
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.8); }
-      100% { box-shadow: 0 0 0 12px rgba(255, 152, 0, 0); }
+      0% {
+        box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.8);
+      }
+
+      100% {
+        box-shadow: 0 0 0 12px rgba(255, 152, 0, 0);
+      }
     }
 
-    .map-controls { position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; gap: 8px; background: rgba(30,30,30,0.85); padding: 6px 12px; border-radius: 20px; backdrop-filter: blur(4px); border: 1px solid #444; }
-    .map-controls button { background: #333; color: white; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
-    .map-controls button:hover { background: #444; }
+    .map-controls {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      gap: 8px;
+      background: rgba(30, 30, 30, 0.85);
+      padding: 6px 12px;
+      border-radius: 20px;
+      backdrop-filter: blur(4px);
+      border: 1px solid #444;
+    }
 
-    .cloudie-marker { 
-      position: absolute; 
-      width: 44px; 
-      height: 44px; 
-      transform: translate(-50%, -100%); 
-      z-index: 6; 
-      animation: bounce 1.5s infinite alternate; 
+    .map-controls button {
+      background: #333;
+      color: white;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 16px;
+      font-weight: bold;
       cursor: pointer;
-      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); 
-      transition: left 1.2s cubic-bezier(0.25, 1, 0.5, 1), top 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
     }
 
-    .cloudie-name { 
-      position: absolute; 
-      top: -22px; 
-      left: 50%; 
-      transform: translateX(-50%); 
-      background: rgba(0,0,0,0.9); 
-      color: #fff; 
-      padding: 3px 8px; 
-      border-radius: 4px; 
-      font-size: 11px; 
-      font-weight: bold; 
-      white-space: nowrap; 
+    .map-controls button:hover {
+      background: #444;
+    }
+
+    .cloudie-marker {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      transform: translate(-50%, -100%);
+      z-index: 6;
+      animation: bounce 1.5s infinite alternate;
+      cursor: pointer;
+      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.8));
+      /* ÄNDRA TIDEN HÄR NERE (just nu inställd på 1.2s) */
+      transition: left 2s cubic-bezier(0.25, 1, 0.5, 1), top 2s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .cloudie-name {
+      position: absolute;
+      top: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      white-space: nowrap;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.2s ease, transform 0.2s ease;
@@ -73,90 +205,496 @@
     }
 
     @keyframes bounce {
-      0% { transform: translate(-50%, -100%); }
-      100% { transform: translate(-50%, -115%); }
+      0% {
+        transform: translate(-50%, -100%);
+      }
+
+      100% {
+        transform: translate(-50%, -115%);
+      }
     }
 
-    .viewport-overlay { display: none; width: 100vw; height: 100vh; position: relative; z-index: 2; pointer-events: none; }
-    .card { background: rgba(30, 30, 30, 0.92); backdrop-filter: blur(8px); padding: 1.2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.7); border: 1px solid #333; pointer-events: auto; }
+    .viewport-overlay {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      z-index: 2;
+      pointer-events: none;
+    }
 
-    .profile-widget { position: absolute; top: 1rem; left: 1rem; width: 360px; max-height: calc(100vh - 2rem); overflow-y: auto; }
-    .leaderboard-widget { position: absolute; bottom: 1rem; right: 1rem; width: 320px; max-height: 480px; overflow-y: auto; }
+    .card {
+      background: rgba(30, 30, 30, 0.92);
+      backdrop-filter: blur(8px);
+      padding: 1.2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+      border: 1px solid #333;
+      pointer-events: auto;
+    }
 
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; }
-    .modal-card { background: #1e1e1e; padding: 1.8rem; border-radius: 12px; border: 1px solid #444; max-width: 480px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.8); text-align: center; }
-    .modal-card h3 { margin-top: 0; color: #ff9800; font-size: 20px; }
-    .modal-card p { font-size: 14px; color: #ccc; margin-bottom: 1.5rem; }
-    .modal-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .profile-widget {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      width: 360px;
+      max-height: calc(100vh - 2rem);
+      overflow-y: auto;
+    }
+
+    .leaderboard-widget {
+      position: absolute;
+      bottom: 1rem;
+      right: 1rem;
+      width: 320px;
+      max-height: 480px;
+      overflow-y: auto;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-card {
+      background: #1e1e1e;
+      padding: 1.8rem;
+      border-radius: 12px;
+      border: 1px solid #444;
+      max-width: 480px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+      text-align: center;
+    }
+
+    .modal-card h3 {
+      margin-top: 0;
+      color: #ff9800;
+      font-size: 20px;
+    }
+
+    .modal-card p {
+      font-size: 14px;
+      color: #ccc;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
 
     /* BOSS BATTLE STYLING */
-    .boss-battle-card { background: #1a0033; border: 2px solid #9c27b0; max-width: 500px; width: 92%; }
-    .hp-bar-outer { background: #333; height: 14px; border-radius: 8px; overflow: hidden; border: 1px solid #555; margin-top: 4px; }
-    .hp-bar-inner { height: 100%; transition: width 0.3s ease; }
-    .hp-player { background: #4caf50; }
-    .mp-player { background: #0288d1; }
-    .hp-boss { background: #f44336; }
-    .battle-log { background: #0d001a; border: 1px solid #4a148c; height: 110px; overflow-y: auto; border-radius: 6px; padding: 8px; font-size: 11px; text-align: left; color: #e1bee7; margin: 1rem 0; font-family: monospace; }
-
-    /* CHARACTER CREATION & AVATAR BUILDER STYLING */
-    .avatar-preview-box { width: 90px; height: 90px; background: #121212; border: 2px solid #ff9800; border-radius: 50%; margin: 0 auto 1rem auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(255,152,0,0.3); }
-    .char-select-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 0.8rem; }
-    .select-btn { background: #2a2a2a; border: 1px solid #444; color: white; padding: 8px 4px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; }
-    .select-btn.active { border-color: #ff9800; background: #4a148c; }
-    .stats-preview { background: #121212; padding: 8px; border-radius: 6px; text-align: left; font-size: 11px; margin-bottom: 0.8rem; border: 1px solid #333; }
-    .attribute-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; font-size: 11px; background: #121212; padding: 8px; border-radius: 6px; border: 1px solid #333; }
-    .habit-picker-box { text-align: left; background: #121212; padding: 10px; border-radius: 6px; border: 1px solid #333; margin-bottom: 1rem; max-height: 120px; overflow-y: auto; }
-    .habit-picker-item { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 4px 0; border-bottom: 1px solid #222; }
-
-    @media (max-width: 820px) {
-      body { overflow-y: auto; }
-      .map-viewport { position: relative; height: 60vh; width: 100vw; }
-      .viewport-overlay { display: flex; flex-direction: column; gap: 1rem; position: relative; padding: 1rem; height: auto; pointer-events: auto; }
-      .profile-widget, .leaderboard-widget { position: static; width: 100%; max-height: none; }
+    .boss-battle-card {
+      background: #1a0033;
+      border: 2px solid #9c27b0;
+      max-width: 500px;
+      width: 92%;
     }
 
-    button.primary-btn { background-color: #4285F4; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
-    button.primary-btn:hover { background-color: #357ae8; }
-    button.danger-btn { background-color: #d32f2f; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; }
-    button.danger-btn:hover { background-color: #b71c1c; }
-    button.success-btn { background-color: #2e7d32; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; }
-    button.success-btn:hover { background-color: #1b5e20; }
-    
-    .stats-bar { display: flex; justify-content: space-around; background: #2a2a2a; padding: 8px; border-radius: 8px; margin-top: 0.8rem; font-weight: bold; font-size: 12px; text-align: center; }
-    
-    .xp-progress-container { margin-top: 0.8rem; }
-    .xp-text { font-size: 11px; color: #aaa; margin-bottom: 4px; display: flex; justify-content: space-between; }
-    .xp-bar-bg { background: #2a2a2a; height: 8px; border-radius: 4px; overflow: hidden; width: 100%; }
-    .xp-bar-fill { background: linear-gradient(90deg, #ff9800, #ffeb3b); height: 100%; width: 0%; transition: width 0.4s ease; }
+    .hp-bar-outer {
+      background: #333;
+      height: 14px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #555;
+      margin-top: 4px;
+    }
 
-    .inventory-box { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; font-size: 11px; }
-    .inventory-item { background: #4a148c; color: white; padding: 4px 8px; border-radius: 12px; font-weight: bold; }
+    .hp-bar-inner {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
 
-    .leaderboard-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 6px; margin-bottom: 8px; }
-    .leaderboard-header h3 { margin: 0; font-size: 15px; color: #ff9800; }
-    .tab-container { display: flex; gap: 4px; margin-bottom: 10px; }
-    .tab-btn { background: #2a2a2a; color: #aaa; border: none; padding: 6px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; flex: 1; text-align: center; }
-    .tab-btn.active { background: #388e3c; color: white; font-weight: bold; }
+    .hp-player {
+      background: #4caf50;
+    }
 
-    .member-item { display: flex; justify-content: space-between; font-size: 12px; padding: 6px 0; border-bottom: 1px solid #333; }
-    .member-item:last-child { border-bottom: none; }
-    
-    .household-form { display: flex; gap: 6px; margin-top: 8px; }
-    .household-form input { flex: 1; padding: 6px 8px; border-radius: 4px; border: 1px solid #444; background: #1e1e1e; color: white; font-size: 11px; }
-    .household-form button { padding: 6px 10px; font-size: 11px; background-color: #388e3c; }
+    .mp-player {
+      background: #0288d1;
+    }
 
-    .habit-list { margin-top: 1rem; }
-    .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #ff9800; margin-top: 1rem; margin-bottom: 0.4rem; font-weight: bold; }
-    .habit-item { background: #2a2a2a; padding: 10px; border-radius: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-    .complete-btn { background-color: #2e7d32; font-size: 11px; padding: 5px 10px; border: none; color: white; border-radius: 4px; cursor: pointer; }
-    .complete-btn:hover { background-color: #1b5e20; }
-    .disabled-btn { background-color: #444; color: #888; cursor: not-allowed; }
-    .disabled-btn:hover { background-color: #444; }
-    
-    .admin-btn { display: none; background-color: #7b1fa2; margin-top: 1rem; width: 100%; border: none; color: white; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-    .admin-btn:hover { background-color: #6a1b9a; }
+    .hp-boss {
+      background: #f44336;
+    }
+
+    .battle-log {
+      background: #0d001a;
+      border: 1px solid #4a148c;
+      height: 110px;
+      overflow-y: auto;
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 11px;
+      text-align: left;
+      color: #e1bee7;
+      margin: 1rem 0;
+      font-family: monospace;
+    }
+
+    /* CHARACTER CREATION & AVATAR BUILDER STYLING */
+    .avatar-preview-box {
+      width: 90px;
+      height: 90px;
+      background: #121212;
+      border: 2px solid #ff9800;
+      border-radius: 50%;
+      margin: 0 auto 1rem auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px rgba(255, 152, 0, 0.3);
+    }
+
+    .char-select-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 0.8rem;
+    }
+
+    .select-btn {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      color: white;
+      padding: 8px 4px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .select-btn.active {
+      border-color: #ff9800;
+      background: #4a148c;
+    }
+
+    .stats-preview {
+      background: #121212;
+      padding: 8px;
+      border-radius: 6px;
+      text-align: left;
+      font-size: 11px;
+      margin-bottom: 0.8rem;
+      border: 1px solid #333;
+    }
+
+    .attribute-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 11px;
+      background: #121212;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #333;
+    }
+
+    .habit-picker-box {
+      text-align: left;
+      background: #121212;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      margin-bottom: 1rem;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .habit-picker-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      padding: 4px 0;
+      border-bottom: 1px solid #222;
+    }
+
+    @media (max-width: 820px) {
+      body {
+        overflow-y: auto;
+      }
+
+      .map-viewport {
+        position: relative;
+        height: 60vh;
+        width: 100vw;
+      }
+
+      .viewport-overlay {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        position: relative;
+        padding: 1rem;
+        height: auto;
+        pointer-events: auto;
+      }
+
+      .profile-widget,
+      .leaderboard-widget {
+        position: static;
+        width: 100%;
+        max-height: none;
+      }
+    }
+
+    button.primary-btn {
+      background-color: #4285F4;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button.primary-btn:hover {
+      background-color: #357ae8;
+    }
+
+    button.danger-btn {
+      background-color: #d32f2f;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button.danger-btn:hover {
+      background-color: #b71c1c;
+    }
+
+    button.success-btn {
+      background-color: #2e7d32;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button.success-btn:hover {
+      background-color: #1b5e20;
+    }
+
+    .stats-bar {
+      display: flex;
+      justify-content: space-around;
+      background: #2a2a2a;
+      padding: 8px;
+      border-radius: 8px;
+      margin-top: 0.8rem;
+      font-weight: bold;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .xp-progress-container {
+      margin-top: 0.8rem;
+    }
+
+    .xp-text {
+      font-size: 11px;
+      color: #aaa;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .xp-bar-bg {
+      background: #2a2a2a;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .xp-bar-fill {
+      background: linear-gradient(90deg, #ff9800, #ffeb3b);
+      height: 100%;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .inventory-box {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      font-size: 11px;
+    }
+
+    .inventory-item {
+      background: #4a148c;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+
+    .leaderboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #333;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+    }
+
+    .leaderboard-header h3 {
+      margin: 0;
+      font-size: 15px;
+      color: #ff9800;
+    }
+
+    .tab-container {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+
+    .tab-btn {
+      background: #2a2a2a;
+      color: #aaa;
+      border: none;
+      padding: 6px 8px;
+      font-size: 11px;
+      border-radius: 4px;
+      cursor: pointer;
+      flex: 1;
+      text-align: center;
+    }
+
+    .tab-btn.active {
+      background: #388e3c;
+      color: white;
+      font-weight: bold;
+    }
+
+    .member-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 6px 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .member-item:last-child {
+      border-bottom: none;
+    }
+
+    .household-form {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .household-form input {
+      flex: 1;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #1e1e1e;
+      color: white;
+      font-size: 11px;
+    }
+
+    .household-form button {
+      padding: 6px 10px;
+      font-size: 11px;
+      background-color: #388e3c;
+    }
+
+    .habit-list {
+      margin-top: 1rem;
+    }
+
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #ff9800;
+      margin-top: 1rem;
+      margin-bottom: 0.4rem;
+      font-weight: bold;
+    }
+
+    .habit-item {
+      background: #2a2a2a;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .complete-btn {
+      background-color: #2e7d32;
+      font-size: 11px;
+      padding: 5px 10px;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .complete-btn:hover {
+      background-color: #1b5e20;
+    }
+
+    .disabled-btn {
+      background-color: #444;
+      color: #888;
+      cursor: not-allowed;
+    }
+
+    .disabled-btn:hover {
+      background-color: #444;
+    }
+
+    .admin-btn {
+      display: none;
+      background-color: #7b1fa2;
+      margin-top: 1rem;
+      width: 100%;
+      border: none;
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .admin-btn:hover {
+      background-color: #6a1b9a;
+    }
   </style>
 </head>
+
 <body>
 
   <div id="login-card" class="login-container">
@@ -169,15 +707,16 @@
   <div id="char-create-modal" class="modal-overlay">
     <div class="modal-card">
       <h2 style="color: #ff9800; margin-top: 0;">🌩️ Design Your Cloudie</h2>
-      
+
       <!-- LIVE AVATAR PREVIEW -->
       <div class="avatar-preview-box" id="avatar-preview-container">
         <!-- SVG rendered dynamically -->
       </div>
 
       <!-- AVATAR DESIGNER CONTROLS -->
-      <div style="text-align: left; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #ff8a80;">1. Customize Appearance:</div>
-      
+      <div style="text-align: left; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #ff8a80;">1.
+        Customize Appearance:</div>
+
       <div style="font-size: 10px; color: #aaa; text-align: left; margin-bottom: 2px;">Cloud Tint:</div>
       <div class="char-select-grid" style="grid-template-columns: repeat(4, 1fr);">
         <button class="select-btn active" onclick="selectAvatarAttr('color', '#ffffff', this)">🤍 White</button>
@@ -209,7 +748,8 @@
       </div>
 
       <!-- RACE & CLASS SELECTION -->
-      <div style="text-align: left; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #ff8a80;">2. Race & Class:</div>
+      <div style="text-align: left; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #ff8a80;">2. Race &
+        Class:</div>
       <div class="char-select-grid">
         <button class="select-btn active" onclick="selectRace('Nimbus', this)">🌩️ Nimbus</button>
         <button class="select-btn" onclick="selectRace('Stratus', this)">⚡ Stratus</button>
@@ -228,12 +768,14 @@
         Loading stats preview...
       </div>
 
-      <div style="text-align: left; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #ff8a80;">3. Select 3 Core Habits:</div>
+      <div style="text-align: left; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #ff8a80;">3. Select 3
+        Core Habits:</div>
       <div id="habit-picker-container" class="habit-picker-box">
         Loading core habits pool...
       </div>
 
-      <button class="success-btn" style="width: 100%; font-size: 15px;" onclick="confirmCharacterCreation()">Begin Adventure! 🚀</button>
+      <button class="success-btn" style="width: 100%; font-size: 15px;" onclick="confirmCharacterCreation()">Begin
+        Adventure! 🚀</button>
     </div>
   </div>
 
@@ -243,7 +785,7 @@
       <div id="nodes-layer"></div>
       <div id="cloudie-overlay"></div>
     </div>
-    
+
     <div class="map-controls">
       <button onclick="zoomMap(0.15)">＋</button>
       <button onclick="zoomMap(-0.15)">－</button>
@@ -264,7 +806,7 @@
   <div id="boss-modal" class="modal-overlay">
     <div class="modal-card boss-battle-card">
       <h2 id="boss-name-display" style="color: #ba68c8; margin: 0 0 10px 0;">👑 Monthly Boss</h2>
-      
+
       <!-- Boss HP -->
       <div style="margin-bottom: 8px; text-align: left;">
         <div style="display: flex; justify-content: space-between; font-size: 11px;">
@@ -306,24 +848,31 @@
       <!-- Actions -->
       <div id="boss-actions" class="modal-actions">
         <button class="danger-btn" onclick="executePlayerAttack()">⚔️ Attack</button>
-        <button style="background-color: #7b1fa2; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer;" onclick="executeCastSpell()">🔮 Cast Spell</button>
+        <button
+          style="background-color: #7b1fa2; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer;"
+          onclick="executeCastSpell()">🔮 Cast Spell</button>
         <button class="success-btn" onclick="executeUseItem()">🧪 Drink Potion</button>
-        <button style="background: #555; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer;" onclick="fleeBossBattle()">🏃 Flee</button>
+        <button
+          style="background: #555; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer;"
+          onclick="fleeBossBattle()">🏃 Flee</button>
       </div>
     </div>
   </div>
 
   <div id="dashboard" class="viewport-overlay">
-    
+
     <div class="card profile-widget">
       <div style="display: flex; align-items: center; gap: 12px;">
-        <div id="profile-avatar-icon" style="width: 50px; height: 50px; background: #121212; border-radius: 50%; border: 1px solid #444; display: flex; align-items: center; justify-content: center;"></div>
+        <div id="profile-avatar-icon"
+          style="width: 50px; height: 50px; background: #121212; border-radius: 50%; border: 1px solid #444; display: flex; align-items: center; justify-content: center;">
+        </div>
         <div>
           <h2 id="user-name" style="margin: 0; font-size: 16px;">Welcome!</h2>
-          <span id="user-race-class" style="font-size: 11px; background: #4a148c; padding: 2px 8px; border-radius: 12px; font-weight: bold;"></span>
+          <span id="user-race-class"
+            style="font-size: 11px; background: #4a148c; padding: 2px 8px; border-radius: 12px; font-weight: bold;"></span>
         </div>
       </div>
-      
+
       <div class="stats-bar">
         <span>⭐ Lvl <span id="user-level">1</span></span>
         <span>🔥 <span id="user-streak">0</span> Days</span>
@@ -360,7 +909,9 @@
       </div>
 
       <button id="admin-link-btn" class="admin-btn" onclick="window.location.href='admin.html'">⚙️ Admin Panel</button>
-      <button id="logout-btn" style="background-color: #e53935; margin-top: 1rem; width: 100%; border: none; color: white; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">Log out</button>
+      <button id="logout-btn"
+        style="background-color: #e53935; margin-top: 1rem; width: 100%; border: none; color: white; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">Log
+        out</button>
     </div>
 
     <div class="card leaderboard-widget">
@@ -371,8 +922,10 @@
 
       <div class="tab-container">
         <button id="tab-house-btn" class="tab-btn active" onclick="switchLeaderboardTab('house')">🏠 House</button>
-        <button id="tab-global-users-btn" class="tab-btn" onclick="switchLeaderboardTab('global-users')">🌍 Players</button>
-        <button id="tab-global-houses-btn" class="tab-btn" onclick="switchLeaderboardTab('global-houses')">🏘️ House-Rank</button>
+        <button id="tab-global-users-btn" class="tab-btn" onclick="switchLeaderboardTab('global-users')">🌍
+          Players</button>
+        <button id="tab-global-houses-btn" class="tab-btn" onclick="switchLeaderboardTab('global-houses')">🏘️
+          House-Rank</button>
       </div>
 
       <div id="leaderboard-content">
@@ -384,7 +937,7 @@
 
   <script>
     const SUPABASE_URL = 'https://phhglvauynccbcpdnjqw.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_ASdxmwP7tzMXRtprVoaM2w_1maNYHQG'; 
+    const SUPABASE_ANON_KEY = 'sb_publishable_ASdxmwP7tzMXRtprVoaM2w_1maNYHQG';
 
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
@@ -393,7 +946,7 @@
     let currentMapNodes = [];
     let cachedItems = [];
     let coreHabitsPool = [];
-    
+
     let allCoreDailiesDone = false;
 
     // Avatar & Character Creation State
@@ -584,7 +1137,7 @@
 
     async function confirmCharacterCreation() {
       const checkedBoxes = Array.from(document.querySelectorAll('input[name="selected-core-habit"]:checked'));
-      
+
       if (checkedBoxes.length !== 3) {
         alert('Please select exactly 3 Core Habits for your daily routine!');
         return;
@@ -592,7 +1145,7 @@
 
       const selectedHabitIds = checkedBoxes.map(chk => chk.value);
       const stats = calculateStats(selectedRace, selectedClass);
-      
+
       const updates = {
         race: selectedRace,
         class: selectedClass,
@@ -914,7 +1467,7 @@
           const { data: profiles } = await db.from('profiles')
             .select('id, full_name, map_node, avatar_config')
             .in('id', userIds);
-          
+
           playersToShow = profiles || [];
         }
       } else {
@@ -935,9 +1488,9 @@
 
         if (targetNode) {
           const isMe = player.id === currentUser.id;
-          
+
           const hash = player.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-          const offsetX = ((hash % 7) - 3) * 0.8; 
+          const offsetX = ((hash % 7) - 3) * 0.8;
           const offsetY = (((hash >> 2) % 7) - 3) * 0.8;
 
           const targetX = targetNode.x + offsetX;
@@ -996,7 +1549,7 @@
 
         if (canReach) {
           desc.innerText = `⚔️ You face ${node.boss_name || 'Monthly Boss'}! Are you ready for battle? If you lose, you will be sent back to Node 1!`;
-          
+
           const fightBtn = document.createElement('button');
           fightBtn.className = 'danger-btn';
           fightBtn.innerText = `Challenge Boss! 🗡️`;
@@ -1011,13 +1564,13 @@
         } else {
           desc.innerText = `🔒 You cannot challenge the boss yet! Requires ${node.required_xp || 0} XP (you have ${userXp} XP).`;
         }
-      } 
+      }
       else if (userNode !== node.node) {
         const canReach = userXp >= (node.required_xp || 0);
 
         if (canReach) {
           desc.innerText = `You are on Node ${userNode}. Do you want to move your avatar to Node ${node.node}? (Requires ${node.required_xp || 0} XP, you have ${userXp} XP)`;
-          
+
           const moveBtn = document.createElement('button');
           moveBtn.className = 'primary-btn';
           moveBtn.innerText = `Move to Node ${node.node} 🏃‍♂️`;
@@ -1026,11 +1579,11 @@
         } else {
           desc.innerText = `🔒 You cannot move here yet. Node ${node.node} requires ${node.required_xp || 0} XP (you have ${userXp} XP).`;
         }
-      } 
+      }
       else {
         if (node.type === 'shop') {
           desc.innerText = `Welcome to the shop! Here you can buy "${node.shop_item_name || 'Unknown item'}" for ${node.shop_item_cost || 100} Coins.`;
-          
+
           const buyBtn = document.createElement('button');
           buyBtn.className = 'primary-btn';
           buyBtn.innerText = `Buy for ${node.shop_item_cost || 100} 💰`;
@@ -1068,9 +1621,9 @@
 
         } else {
           if (allCoreDailiesDone) {
-             desc.innerText = `You are on Node ${node.node}. All daily routines are completed! You are ready to move on anytime.`;
+            desc.innerText = `You are on Node ${node.node}. All daily routines are completed! You are ready to move on anytime.`;
           } else {
-             desc.innerText = `You are on Node ${node.node}. Complete your daily routines to earn XP and travel further!`;
+            desc.innerText = `You are on Node ${node.node}. Complete your daily routines to earn XP and travel further!`;
           }
         }
       }
@@ -1139,7 +1692,7 @@
     function executePlayerAttack() {
       const p = currentUserProfile || {};
       const mainStat = p.class === 'Ranger' || p.class === 'Rogue' ? (p.dex || 10) : (p.str || 10);
-      
+
       const hitChance = 0.75 + (mainStat * 0.015) - ((currentBossNode?.node || 1) * 0.02);
       const isHit = Math.random() < hitChance;
 
@@ -1217,7 +1770,7 @@
       setTimeout(() => {
         const p = currentUserProfile || {};
         const agiVal = p.agi || 10;
-        
+
         const dodgeChance = 0.05 + (agiVal * 0.015);
         const isDodged = Math.random() < dodgeChance;
 
@@ -1475,9 +2028,9 @@
 
     async function loadHabits(userId) {
       const { data: habits, error } = await db.rpc('get_user_quests', { p_user_id: userId });
-      
+
       const todayStart = new Date();
-      todayStart.setHours(0,0,0,0);
+      todayStart.setHours(0, 0, 0, 0);
 
       const { data: todayLogs } = await db.from('habit_logs')
         .select('habit_id')
@@ -1486,7 +2039,7 @@
 
       const completedHabitIds = new Set(todayLogs ? todayLogs.map(l => l.habit_id) : []);
       const container = document.getElementById('habits-container');
-      
+
       if (!habits || habits.length === 0) {
         container.innerHTML = '<p>No challenges available.</p>';
         allCoreDailiesDone = true;
@@ -1524,7 +2077,7 @@
             div.className = 'habit-item';
             div.innerHTML = `
               <span>${habit.title} (+${habit.xp_reward} XP / +${habit.coin_reward} 💰)</span>
-              ${isDoneToday 
+              ${isDoneToday
                 ? `<button class="complete-btn disabled-btn" disabled>Completed! ✅</button>`
                 : `<button class="complete-btn" onclick="claimRewards('${habit.id}')">Complete!</button>`
               }
@@ -1544,7 +2097,7 @@
         updateXpBar(data.xp, data.level);
         document.getElementById('user-coins').innerText = data.coins;
         document.getElementById('user-streak').innerText = data.streak;
-        
+
         currentUserProfile.xp = data.xp;
         currentUserProfile.coins = data.coins;
         currentUserProfile.level = data.level;
@@ -1561,7 +2114,7 @@
 
     async function checkUser() {
       const { data: { session } } = await db.auth.getSession();
-      
+
       if (session) {
         currentUser = session.user;
         document.getElementById('login-card').style.display = 'none';
@@ -1622,4 +2175,5 @@
     checkUser();
   </script>
 </body>
+
 </html>
