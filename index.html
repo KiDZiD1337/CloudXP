@@ -36,8 +36,40 @@
     .map-controls button { background: #333; color: white; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
     .map-controls button:hover { background: #444; }
 
-    .cloudie-marker { position: absolute; width: 44px; height: 44px; transform: translate(-50%, -100%); z-index: 6; animation: bounce 1.5s infinite alternate; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); }
-    .cloudie-name { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; white-space: nowrap; }
+    .cloudie-marker { 
+      position: absolute; 
+      width: 44px; 
+      height: 44px; 
+      transform: translate(-50%, -100%); 
+      z-index: 6; 
+      animation: bounce 1.5s infinite alternate; 
+      cursor: pointer;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); 
+    }
+
+    .cloudie-name { 
+      position: absolute; 
+      top: -22px; 
+      left: 50%; 
+      transform: translateX(-50%); 
+      background: rgba(0,0,0,0.9); 
+      color: #fff; 
+      padding: 3px 8px; 
+      border-radius: 4px; 
+      font-size: 11px; 
+      font-weight: bold; 
+      white-space: nowrap; 
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      border: 1px solid #ff9800;
+      z-index: 10;
+    }
+
+    .cloudie-marker:hover .cloudie-name {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-2px);
+    }
 
     @keyframes bounce {
       0% { transform: translate(-50%, -100%); }
@@ -602,7 +634,7 @@
 
       Object.assign(currentUserProfile, updates);
       renderProfileUi();
-      renderCloudieOnNode(currentUserProfile.map_node || 1);
+      renderAllCloudiesOnMap();
       loadHabits(currentUser.id);
       document.getElementById('char-create-modal').style.display = 'none';
     }
@@ -821,20 +853,20 @@
 
         img.onload = () => {
           renderNodesOnMap();
-          renderCloudieOnNode(userNode);
+          renderAllCloudiesOnMap();
           centerOnNode(userNode);
         };
 
         img.onerror = () => {
           renderNodesOnMap();
-          renderCloudieOnNode(userNode);
+          renderAllCloudiesOnMap();
           centerOnNode(userNode);
         };
 
         img.src = mapData.image_url;
       } else {
         renderNodesOnMap();
-        renderCloudieOnNode(userNode);
+        renderAllCloudiesOnMap();
       }
     }
 
@@ -859,24 +891,65 @@
       });
     }
 
-    function renderCloudieOnNode(nodeNum) {
+    /* MULTI-PLAYER CLOUDIE MAP ENGINE */
+    async function renderAllCloudiesOnMap() {
       const overlay = document.getElementById('cloudie-overlay');
       overlay.innerHTML = '';
 
-      if (!currentMapNodes || currentMapNodes.length === 0) return;
+      if (!currentMapNodes || currentMapNodes.length === 0 || !currentUserProfile) return;
 
-      const targetNode = currentMapNodes.find(n => n.node === nodeNum) || currentMapNodes[0];
+      let playersToShow = [];
 
-      if (targetNode) {
-        const marker = document.createElement('div');
-        marker.className = 'cloudie-marker';
-        marker.style.left = `${targetNode.x}%`;
-        marker.style.top = `${targetNode.y}%`;
-        
-        const avatarSvg = renderCloudieSVG(currentUserProfile?.avatar_config, 40);
-        marker.innerHTML = `<div class="cloudie-name">You (Node ${nodeNum})</div>${avatarSvg}`;
-        overlay.appendChild(marker);
+      const { data: member } = await db.from('household_members')
+        .select('household_id')
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+
+      if (member && member.household_id) {
+        const { data: houseMembers } = await db.from('household_members')
+          .select('user_id')
+          .eq('household_id', member.household_id);
+
+        if (houseMembers && houseMembers.length > 0) {
+          const userIds = houseMembers.map(m => m.user_id);
+          const { data: profiles } = await db.from('profiles')
+            .select('id, full_name, map_node, avatar_config')
+            .in('id', userIds);
+          
+          playersToShow = profiles || [];
+        }
+      } else {
+        playersToShow = [currentUserProfile];
       }
+
+      playersToShow.forEach(player => {
+        const playerNodeNum = player.map_node || 1;
+        const targetNode = currentMapNodes.find(n => n.node === playerNodeNum) || currentMapNodes[0];
+
+        if (targetNode) {
+          const isMe = player.id === currentUser.id;
+          const marker = document.createElement('div');
+          marker.className = 'cloudie-marker';
+          
+          const offsetX = (Math.random() - 0.5) * 2; 
+          const offsetY = (Math.random() - 0.5) * 2;
+
+          marker.style.left = `${targetNode.x + offsetX}%`;
+          marker.style.top = `${targetNode.y + offsetY}%`;
+          
+          if (isMe) marker.style.zIndex = '8';
+
+          const displayName = isMe ? `${player.full_name || 'You'} (You)` : (player.full_name || 'Player');
+          const avatarSvg = renderCloudieSVG(player.avatar_config, 40);
+
+          marker.innerHTML = `
+            <div class="cloudie-name">${displayName} • Node ${playerNodeNum}</div>
+            ${avatarSvg}
+          `;
+
+          overlay.appendChild(marker);
+        }
+      });
     }
 
     function handleNodeClick(node) {
@@ -1197,7 +1270,7 @@
       } else {
         currentUserProfile.map_node = 1;
         renderNodesOnMap();
-        renderCloudieOnNode(1);
+        renderAllCloudiesOnMap();
         centerOnNode(1);
         document.getElementById('node-modal').style.display = 'none';
       }
@@ -1224,7 +1297,7 @@
       } else {
         currentUserProfile.map_node = newNodeId;
         renderNodesOnMap();
-        renderCloudieOnNode(newNodeId);
+        renderAllCloudiesOnMap();
         centerOnNode(newNodeId);
         if (autoCloseModal) {
           document.getElementById('node-modal').style.display = 'none';
@@ -1356,7 +1429,10 @@
 
       const { error } = await db.rpc('create_household', { h_name: name });
       if (error) alert('Error: ' + error.message);
-      else renderLeaderboard();
+      else {
+        renderLeaderboard();
+        renderAllCloudiesOnMap();
+      }
     }
 
     async function joinHouse() {
@@ -1366,7 +1442,10 @@
 
       const { error } = await db.rpc('join_household', { p_code: code });
       if (error) alert('Error: ' + error.message);
-      else renderLeaderboard();
+      else {
+        renderLeaderboard();
+        renderAllCloudiesOnMap();
+      }
     }
 
     async function loadHabits(userId) {
@@ -1451,7 +1530,7 @@
         loadHabits(currentUser.id);
         renderLeaderboard();
         renderNodesOnMap();
-        renderCloudieOnNode(data.map_node || 1);
+        renderAllCloudiesOnMap();
       }
     }
 
@@ -1498,7 +1577,6 @@
 
         renderProfileUi();
 
-        // Open Character Creation if the user hasn't selected a race/class or habits yet
         if (!profile.race || !profile.class) {
           updateCharPreview();
           updateAvatarPreview();
