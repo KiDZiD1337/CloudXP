@@ -1448,13 +1448,26 @@
       const { error } = await db.from('profiles').update({ map_node: newNodeId }).eq('id', currentUser.id);
       if (error) {
         alert('Could not move: ' + error.message);
-      } else {
-        currentUserProfile.map_node = newNodeId;
-        renderNodesOnMap();
-        renderAllCloudiesOnMap();
-        centerOnNode(newNodeId);
-        if (autoCloseModal) {
-          document.getElementById('node-modal').style.display = 'none';
+        return;
+      }
+
+      currentUserProfile.map_node = newNodeId;
+      renderNodesOnMap();
+      renderAllCloudiesOnMap();
+      centerOnNode(newNodeId);
+
+      if (autoCloseModal) {
+        document.getElementById('node-modal').style.display = 'none';
+      }
+
+      // Hitta den nod som spelaren precis landade på för att trigga automatisk popup
+      const landedNode = currentMapNodes.find(n => n.node === newNodeId);
+
+      if (landedNode) {
+        if (landedNode.type === 'shop') {
+          handleNodeClick(landedNode);
+        } else if (landedNode.type === 'boss') {
+          startBossBattle(landedNode);
         }
       }
     }
@@ -1635,8 +1648,8 @@
       const sections = [
         { key: 'core', label: '📌 Daily Routines (Core)', filter: h => h.is_core && h.quest_type === 'daily' },
         { key: 'side', label: '🎲 Today\'s Side Quests (Random)', filter: h => !h.is_core && h.quest_type === 'daily' },
-        { key: 'weekly', label: '⚔️ Weekly Tasks (Weekly)', filter: h => h.quest_type === 'weekly' },
-        { key: 'monthly', label: '👑 Monthly Tasks (Monthly)', filter: h => h.quest_type === 'monthly' }
+        { key: 'weekly', label: '🗓️ Weekly Tasks (Weekly)', filter: h => h.quest_type === 'weekly' },
+        { key: 'monthly', label: '🏆 Monthly Tasks (Monthly)', filter: h => h.quest_type === 'monthly' }
       ];
 
       sections.forEach(sec => {
