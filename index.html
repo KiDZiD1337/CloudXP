@@ -482,7 +482,29 @@
       title.innerText = `📍 Nod ${node.node} (${nodeTypeLabel})`;
       actions.innerHTML = '';
 
-      if (userNode !== node.node) {
+      // Om klickad nod är en Boss-nod (oavsett om man står där eller vill flytta dit)
+      if (node.type === 'boss') {
+        const canReach = userXp >= (node.required_xp || 0);
+
+        if (canReach) {
+          desc.innerText = `⚔️ Du står inför Månadsbossen på Nod ${node.node}! Är du redo att strida? Om du förlorar skickas du tillbaka till Nod 1 för att träna mer!`;
+          
+          const fightBtn = document.createElement('button');
+          fightBtn.className = 'danger-btn';
+          fightBtn.innerText = `Utmana Bossen! 🗡️`;
+          fightBtn.onclick = async () => {
+            if (userNode !== node.node) {
+              await moveToNode(node.node, false);
+            }
+            challengeBoss();
+          };
+          actions.appendChild(fightBtn);
+        } else {
+          desc.innerText = `🔒 Du kan inte utmana Bossen ännu! Kräver ${node.required_xp || 0} XP (du har ${userXp} XP).`;
+        }
+      } 
+      // Vanliga noder där spelaren inte står än
+      else if (userNode !== node.node) {
         const canReach = userXp >= (node.required_xp || 0);
 
         if (canReach) {
@@ -497,17 +519,9 @@
           desc.innerText = `🔒 Du kan inte flytta hit ännu. Nod ${node.node} kräver ${node.required_xp || 0} XP (du har ${userXp} XP).`;
         }
       } 
+      // Vanliga noder där spelaren redan står
       else {
-        if (node.type === 'boss') {
-          desc.innerText = `⚔️ Du står inför Månadsbossen på Nod ${node.node}! Är du redo att strida? Om du förlorar skickas du tillbaka till Nod 1 för att träna mer!`;
-          
-          const fightBtn = document.createElement('button');
-          fightBtn.className = 'danger-btn';
-          fightBtn.innerText = `Utmana Bossen! 🗡️`;
-          fightBtn.onclick = () => challengeBoss();
-          actions.appendChild(fightBtn);
-
-        } else if (node.type === 'shop') {
+        if (node.type === 'shop') {
           desc.innerText = `Välkommen till butiken! Här kan du köpa "${node.shop_item_name || 'Okänd pryl'}" för ${node.shop_item_cost || 100} Coins.`;
           
           const buyBtn = document.createElement('button');
@@ -611,7 +625,7 @@
       }
     }
 
-    async function moveToNode(newNodeId) {
+    async function moveToNode(newNodeId, autoCloseModal = true) {
       const { error } = await db.from('profiles').update({ map_node: newNodeId }).eq('id', currentUser.id);
       if (error) {
         alert('Kunde inte flytta: ' + error.message);
@@ -620,7 +634,9 @@
         renderNodesOnMap();
         renderCloudieOnNode(newNodeId);
         centerOnNode(newNodeId);
-        document.getElementById('node-modal').style.display = 'none';
+        if (autoCloseModal) {
+          document.getElementById('node-modal').style.display = 'none';
+        }
       }
     }
 
