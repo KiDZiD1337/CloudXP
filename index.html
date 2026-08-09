@@ -62,7 +62,7 @@
     .hp-bar-inner { height: 100%; transition: width 0.3s ease; }
     .hp-player { background: #4caf50; }
     .hp-boss { background: #f44336; }
-    .battle-log { background: #0d001a; border: 1px solid #4a148c; height: 100px; overflow-y: auto; border-radius: 6px; padding: 8px; font-size: 11px; text-align: left; color: #e1bee7; margin: 1rem 0; font-family: monospace; }
+    .battle-log { background: #0d001a; border: 1px solid #4a148c; height: 110px; overflow-y: auto; border-radius: 6px; padding: 8px; font-size: 11px; text-align: left; color: #e1bee7; margin: 1rem 0; font-family: monospace; }
 
     @media (max-width: 820px) {
       body { overflow-y: auto; }
@@ -151,9 +151,9 @@
       
       <!-- Boss HP -->
       <div style="margin-bottom: 12px; text-align: left;">
-        <div style="display: flex; justify-span: space-between; font-size: 12px;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px;">
           <span>👹 Boss HP</span>
-          <span id="boss-hp-text">100 / 100</span>
+          <span id="boss-hp-text">300 / 300</span>
         </div>
         <div class="hp-bar-outer">
           <div id="boss-hp-bar" class="hp-bar-inner hp-boss" style="width: 100%;"></div>
@@ -247,14 +247,15 @@
     let currentUserProfile = null;
     let activeTab = 'house';
     let currentMapNodes = [];
+    let cachedItems = [];
     
     let allCoreDailiesDone = false;
 
     // Boss Battle State Variables
     let currentBossNode = null;
-    let bossMaxHp = 100;
-    let bossCurrentHp = 100;
-    let bossDamage = 15;
+    let bossMaxHp = 300;
+    let bossCurrentHp = 300;
+    let bossDamage = 20;
     let playerMaxHp = 80;
     let playerCurrentHp = 80;
 
@@ -278,6 +279,11 @@
       await db.auth.signOut();
       window.location.reload();
     });
+
+    async function loadItemCatalog() {
+      const { data } = await db.from('item_pool').select('*');
+      cachedItems = data || [];
+    }
 
     function initMapPanZoom() {
       const viewport = document.getElementById('map-viewport');
@@ -641,13 +647,13 @@
     }
 
     /* ==========================================
-       INTERAKTIV BOSS BATTLE MOTOR
+       INTERAKTIV BOSS BATTLE MOTOR (DYNAMISK SKADA)
        ========================================== */
     function startBossBattle(node) {
       currentBossNode = node;
-      bossMaxHp = node.boss_hp || 100;
+      bossMaxHp = node.boss_hp || 300;
       bossCurrentHp = bossMaxHp;
-      bossDamage = node.boss_damage || 15;
+      bossDamage = node.boss_damage || 20;
 
       const userLvl = currentUserProfile ? currentUserProfile.level : 1;
       const userStreak = currentUserProfile ? currentUserProfile.streak_count : 0;
@@ -679,13 +685,46 @@
       log.scrollTop = log.scrollHeight;
     }
 
-    function executePlayerAttack() {
+    function calculatePlayerDamage() {
       const userLvl = currentUserProfile ? currentUserProfile.level : 1;
-      const baseDmg = 15 + (userLvl * 5);
-      const randomDmg = Math.floor(Math.random() * 8) + baseDmg;
+      const userStreak = currentUserProfile ? currentUserProfile.streak_count : 0;
+      const inventory = currentUserProfile ? (currentUserProfile.inventory || []) : [];
 
-      bossCurrentHp = Math.max(0, bossCurrentHp - randomDmg);
-      logBattleMessage(`Du anfaller och gör <b style="color:#aed581;">${randomDmg} skada</b>!`);
+      let baseDmg = 10 + (userLvl * 3); 
+      let streakBonus = userStreak * 2;
+
+      let gearBonus = 0;
+      if (inventory.length > 0 && cachedItems.length > 0) {
+        inventory.forEach(itemName => {
+          const itemData = cachedItems.find(i => i.name === itemName);
+          if (itemData && itemData.attack_bonus) {
+            gearBonus += itemData.attack_bonus;
+          }
+        });
+      }
+
+      let rngDmg = Math.floor(Math.random() * 11);
+      let totalDmg = baseDmg + streakBonus + gearBonus + rngDmg;
+
+      const isCrit = Math.random() < 0.15;
+      if (isCrit) {
+        totalDmg = totalDmg * 2;
+      }
+
+      return { damage: totalDmg, isCrit, gearBonus };
+    }
+
+    function executePlayerAttack() {
+      const attackInfo = calculatePlayerDamage();
+
+      bossCurrentHp = Math.max(0, bossCurrentHp - attackInfo.damage);
+      
+      if (attackInfo.isCrit) {
+        logBattleMessage(`💥 <b style="color:#ffeb3b;">CRITICAL HIT!</b> Du anfaller och gör <b style="color:#aed581;">${attackInfo.damage} skada</b>!`);
+      } else {
+        logBattleMessage(`Du anfaller och gör <b style="color:#aed581;">${attackInfo.damage} skada</b>!`);
+      }
+
       updateBattleHpUi();
 
       if (bossCurrentHp <= 0) {
@@ -1032,6 +1071,7 @@
         document.getElementById('map-viewport').style.display = 'block';
         document.getElementById('dashboard').style.display = 'block';
 
+        await loadItemCatalog();
         initMapPanZoom();
 
         let { data: profile } = await db.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
