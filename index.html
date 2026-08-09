@@ -51,18 +51,26 @@
     .leaderboard-widget { position: absolute; bottom: 1rem; right: 1rem; width: 320px; max-height: 480px; overflow-y: auto; }
 
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; }
-    .modal-card { background: #1e1e1e; padding: 1.8rem; border-radius: 12px; border: 1px solid #444; max-width: 420px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.8); text-align: center; }
+    .modal-card { background: #1e1e1e; padding: 1.8rem; border-radius: 12px; border: 1px solid #444; max-width: 440px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.8); text-align: center; }
     .modal-card h3 { margin-top: 0; color: #ff9800; font-size: 20px; }
     .modal-card p { font-size: 14px; color: #ccc; margin-bottom: 1.5rem; }
     .modal-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
     /* BOSS BATTLE STYLING */
     .boss-battle-card { background: #1a0033; border: 2px solid #9c27b0; max-width: 500px; width: 92%; }
-    .hp-bar-outer { background: #333; height: 16px; border-radius: 8px; overflow: hidden; border: 1px solid #555; margin-top: 4px; }
+    .hp-bar-outer { background: #333; height: 14px; border-radius: 8px; overflow: hidden; border: 1px solid #555; margin-top: 4px; }
     .hp-bar-inner { height: 100%; transition: width 0.3s ease; }
     .hp-player { background: #4caf50; }
+    .mp-player { background: #0288d1; }
     .hp-boss { background: #f44336; }
     .battle-log { background: #0d001a; border: 1px solid #4a148c; height: 110px; overflow-y: auto; border-radius: 6px; padding: 8px; font-size: 11px; text-align: left; color: #e1bee7; margin: 1rem 0; font-family: monospace; }
+
+    /* CHARACTER CREATION STYLING */
+    .char-select-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
+    .select-btn { background: #2a2a2a; border: 1px solid #444; color: white; padding: 10px 4px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    .select-btn.active { border-color: #ff9800; background: #4a148c; }
+    .stats-preview { background: #121212; padding: 10px; border-radius: 6px; text-align: left; font-size: 11px; margin-bottom: 1rem; border: 1px solid #333; }
+    .attribute-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; font-size: 11px; background: #121212; padding: 8px; border-radius: 6px; border: 1px solid #333; }
 
     @media (max-width: 820px) {
       body { overflow-y: auto; }
@@ -78,7 +86,7 @@
     button.success-btn { background-color: #2e7d32; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; }
     button.success-btn:hover { background-color: #1b5e20; }
     
-    .stats-bar { display: flex; justify-content: space-around; background: #2a2a2a; padding: 10px; border-radius: 8px; margin-top: 0.8rem; font-weight: bold; font-size: 13px; text-align: center; }
+    .stats-bar { display: flex; justify-content: space-around; background: #2a2a2a; padding: 8px; border-radius: 8px; margin-top: 0.8rem; font-weight: bold; font-size: 12px; text-align: center; }
     
     .xp-progress-container { margin-top: 0.8rem; }
     .xp-text { font-size: 11px; color: #aaa; margin-bottom: 4px; display: flex; justify-content: space-between; }
@@ -121,6 +129,36 @@
     <button id="login-btn" class="primary-btn">Logga in med Google</button>
   </div>
 
+  <!-- CHARACTER CREATION MODAL -->
+  <div id="char-create-modal" class="modal-overlay">
+    <div class="modal-card">
+      <h2 style="color: #ff9800; margin-top: 0;">🌩️ Skapa din Cloudie</h2>
+      <p style="font-size: 12px; color: #aaa;">Välj Ras och Klass för att forma dina attribut och stridsstil!</p>
+
+      <div style="text-align: left; font-size: 12px; font-weight: bold; margin-bottom: 4px;">1. Välj Ras:</div>
+      <div class="char-select-grid">
+        <button class="select-btn active" onclick="selectRace('Nimbus', this)">🌩️ Nimbus<br><span style="font-weight:normal; font-size:10px;">+AGI / Evasion</span></button>
+        <button class="select-btn" onclick="selectRace('Stratus', this)">⚡ Stratus<br><span style="font-weight:normal; font-size:10px;">+INT / Crit</span></button>
+        <button class="select-btn" onclick="selectRace('Cumulus', this)">🌧️ Cumulus<br><span style="font-weight:normal; font-size:10px;">+CON / HP</span></button>
+      </div>
+
+      <div style="text-align: left; font-size: 12px; font-weight: bold; margin-bottom: 4px;">2. Välj Klass:</div>
+      <div class="char-select-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <button class="select-btn active" onclick="selectClass('Warrior', this)">⚔️ Warrior</button>
+        <button class="select-btn" onclick="selectClass('Ranger', this)">🏹 Ranger</button>
+        <button class="select-btn" onclick="selectClass('Mage', this)">🔮 Mage</button>
+        <button class="select-btn" onclick="selectClass('Paladin', this)">🛡️ Paladin</button>
+        <button class="select-btn" onclick="selectClass('Rogue', this)">🗡️ Rogue</button>
+      </div>
+
+      <div class="stats-preview" id="char-stats-preview">
+        Laddar attribut...
+      </div>
+
+      <button class="success-btn" style="width: 100%; font-size: 15px;" onclick="confirmCharacterCreation()">Påbörja Äventyret! 🚀</button>
+    </div>
+  </div>
+
   <div id="map-viewport" class="map-viewport" style="display: none;">
     <div class="map-container" id="map-container">
       <img id="active-map-img" class="map-image" src="" alt="Månadens Karta">
@@ -150,8 +188,8 @@
       <h2 id="boss-name-display" style="color: #ba68c8; margin: 0 0 10px 0;">👑 Månadsbossen</h2>
       
       <!-- Boss HP -->
-      <div style="margin-bottom: 12px; text-align: left;">
-        <div style="display: flex; justify-content: space-between; font-size: 12px;">
+      <div style="margin-bottom: 8px; text-align: left;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px;">
           <span>👹 Boss HP</span>
           <span id="boss-hp-text">300 / 300</span>
         </div>
@@ -161,13 +199,24 @@
       </div>
 
       <!-- Spelar HP -->
-      <div style="margin-bottom: 12px; text-align: left;">
-        <div style="display: flex; justify-content: space-between; font-size: 12px;">
+      <div style="margin-bottom: 8px; text-align: left;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px;">
           <span>☁️ Din HP</span>
           <span id="player-hp-text">80 / 80</span>
         </div>
         <div class="hp-bar-outer">
           <div id="player-hp-bar" class="hp-bar-inner hp-player" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- Spelar MP -->
+      <div style="margin-bottom: 12px; text-align: left;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px;">
+          <span>🔮 Mana (MP)</span>
+          <span id="player-mp-text">50 / 50</span>
+        </div>
+        <div class="hp-bar-outer">
+          <div id="player-mp-bar" class="hp-bar-inner mp-player" style="width: 100%;"></div>
         </div>
       </div>
 
@@ -179,7 +228,8 @@
       <!-- Handlingar -->
       <div id="boss-actions" class="modal-actions">
         <button class="danger-btn" onclick="executePlayerAttack()">⚔️ Attackera</button>
-        <button class="success-btn" onclick="executeUseItem()">🧪 Använd Pryl</button>
+        <button style="background-color: #7b1fa2; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer;" onclick="executeCastSpell()">🔮 Besvärjelse</button>
+        <button class="success-btn" onclick="executeUseItem()">🧪 Drick Dryck</button>
         <button style="background: #555; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer;" onclick="fleeBossBattle()">🏃 Fly</button>
       </div>
     </div>
@@ -188,7 +238,10 @@
   <div id="dashboard" class="viewport-overlay">
     
     <div class="card profile-widget">
-      <h2 id="user-name" style="margin: 0 0 4px 0; font-size: 18px;">Välkommen!</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 id="user-name" style="margin: 0; font-size: 18px;">Välkommen!</h2>
+        <span id="user-race-class" style="font-size: 11px; background: #4a148c; padding: 2px 8px; border-radius: 12px; font-weight: bold;"></span>
+      </div>
       
       <div class="stats-bar">
         <span>⭐ Lvl <span id="user-level">1</span></span>
@@ -204,6 +257,16 @@
         <div class="xp-bar-bg">
           <div id="xp-fill" class="xp-bar-fill"></div>
         </div>
+      </div>
+
+      <!-- ATTRIBUTE GRID DISPLAY -->
+      <div class="attribute-grid">
+        <span>💪 STR: <b id="stat-str">10</b></span>
+        <span>🎯 DEX: <b id="stat-dex">10</b></span>
+        <span>🔮 INT: <b id="stat-int">10</b></span>
+        <span>🧠 WIS: <b id="stat-wis">10</b></span>
+        <span>🛡️ CON: <b id="stat-con">10</b></span>
+        <span>⚡ AGI: <b id="stat-agi">10</b></span>
       </div>
 
       <div style="margin-top: 10px;">
@@ -251,6 +314,10 @@
     
     let allCoreDailiesDone = false;
 
+    // Selected Character Creation State
+    let selectedRace = 'Nimbus';
+    let selectedClass = 'Warrior';
+
     // Boss Battle State Variables
     let currentBossNode = null;
     let bossMaxHp = 300;
@@ -258,6 +325,8 @@
     let bossDamage = 20;
     let playerMaxHp = 80;
     let playerCurrentHp = 80;
+    let playerMaxMp = 50;
+    let playerCurrentMp = 50;
 
     let scale = 1;
     let minScale = 1;
@@ -283,6 +352,95 @@
     async function loadItemCatalog() {
       const { data } = await db.from('item_pool').select('*');
       cachedItems = data || [];
+    }
+
+    /* ==========================================
+       CHARACTER CREATION LOGIK
+       ========================================== */
+    function selectRace(race, btn) {
+      selectedRace = race;
+      btn.parentElement.querySelectorAll('.select-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateCharPreview();
+    }
+
+    function selectClass(className, btn) {
+      selectedClass = className;
+      btn.parentElement.querySelectorAll('.select-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateCharPreview();
+    }
+
+    function calculateStats(race, className) {
+      let stats = { str: 10, dex: 10, int: 10, wis: 10, con: 10, agi: 10 };
+
+      // Race Modifiers
+      if (race === 'Nimbus') { stats.agi += 4; stats.dex += 2; }
+      else if (race === 'Stratus') { stats.int += 4; stats.wis += 2; }
+      else if (race === 'Cumulus') { stats.con += 4; stats.str += 2; }
+
+      // Class Modifiers
+      if (className === 'Warrior') { stats.str += 6; stats.con += 4; }
+      else if (className === 'Ranger') { stats.dex += 6; stats.agi += 4; }
+      else if (className === 'Mage') { stats.int += 8; stats.wis += 4; stats.con -= 2; }
+      else if (className === 'Paladin') { stats.str += 4; stats.wis += 4; stats.con += 2; }
+      else if (className === 'Rogue') { stats.dex += 5; stats.str += 3; stats.agi += 4; }
+
+      return stats;
+    }
+
+    function updateCharPreview() {
+      const stats = calculateStats(selectedRace, selectedClass);
+      const preview = document.getElementById('char-stats-preview');
+      preview.innerHTML = `
+        <strong>Stats Preview:</strong><br>
+        💪 STR: ${stats.str} | 🎯 DEX: ${stats.dex} | 🔮 INT: ${stats.int}<br>
+        🧠 WIS: ${stats.wis} | 🛡️ CON: ${stats.con} | ⚡ AGI: ${stats.agi}
+      `;
+    }
+
+    async function confirmCharacterCreation() {
+      const stats = calculateStats(selectedRace, selectedClass);
+      const updates = {
+        race: selectedRace,
+        class: selectedClass,
+        str: stats.str,
+        dex: stats.dex,
+        int_stat: stats.int,
+        wis: stats.wis,
+        con: stats.con,
+        agi: stats.agi,
+        current_mp: 50 + (stats.wis * 5),
+        max_mp: 50 + (stats.wis * 5)
+      };
+
+      const { error } = await db.from('profiles').update(updates).eq('id', currentUser.id);
+
+      if (error) {
+        alert('Fel vid skapande: ' + error.message);
+      } else {
+        Object.assign(currentUserProfile, updates);
+        renderProfileUi();
+        document.getElementById('char-create-modal').style.display = 'none';
+      }
+    }
+
+    function renderProfileUi() {
+      const p = currentUserProfile;
+      document.getElementById('user-name').innerText = 'Hej ' + (p.full_name || 'Användare') + '!';
+      document.getElementById('user-race-class').innerText = `${p.race || 'Nimbus'} ${p.class || 'Warrior'}`;
+      document.getElementById('user-coins').innerText = p.coins || 0;
+      document.getElementById('user-streak').innerText = p.streak_count || 0;
+
+      document.getElementById('stat-str').innerText = p.str || 10;
+      document.getElementById('stat-dex').innerText = p.dex || 10;
+      document.getElementById('stat-int').innerText = p.int_stat || 10;
+      document.getElementById('stat-wis').innerText = p.wis || 10;
+      document.getElementById('stat-con').innerText = p.con || 10;
+      document.getElementById('stat-agi').innerText = p.agi || 10;
+
+      updateXpBar(p.xp || 0, p.level || 1);
+      renderInventory(p.inventory || []);
     }
 
     function initMapPanZoom() {
@@ -647,7 +805,7 @@
     }
 
     /* ==========================================
-       INTERAKTIV BOSS BATTLE MOTOR (DYNAMISK SKADA)
+       INTERAKTIV BOSS BATTLE MOTOR (MED STATS & MISS)
        ========================================== */
     function startBossBattle(node) {
       currentBossNode = node;
@@ -655,11 +813,15 @@
       bossCurrentHp = bossMaxHp;
       bossDamage = node.boss_damage || 20;
 
-      const userLvl = currentUserProfile ? currentUserProfile.level : 1;
-      const userStreak = currentUserProfile ? currentUserProfile.streak_count : 0;
-      
-      playerMaxHp = 50 + (userLvl * 10) + (userStreak * 5);
+      const p = currentUserProfile || {};
+      const conVal = p.con || 10;
+      const wisVal = p.wis || 10;
+
+      playerMaxHp = 60 + (p.level * 10) + (conVal * 5);
       playerCurrentHp = playerMaxHp;
+
+      playerMaxMp = 30 + (wisVal * 5);
+      playerCurrentMp = playerMaxMp;
 
       document.getElementById('boss-name-display').innerText = `👑 ${node.boss_name || 'Månadsbossen'}`;
       document.getElementById('battle-log').innerHTML = `> Striden har börjat mot ${node.boss_name || 'Månadsbossen'}!<br>`;
@@ -671,12 +833,16 @@
     function updateBattleHpUi() {
       const bossPct = Math.max(0, Math.min(100, (bossCurrentHp / bossMaxHp) * 100));
       const playerPct = Math.max(0, Math.min(100, (playerCurrentHp / playerMaxHp) * 100));
+      const mpPct = Math.max(0, Math.min(100, (playerCurrentMp / playerMaxMp) * 100));
 
       document.getElementById('boss-hp-text').innerText = `${bossCurrentHp} / ${bossMaxHp}`;
       document.getElementById('boss-hp-bar').style.width = `${bossPct}%`;
 
       document.getElementById('player-hp-text').innerText = `${playerCurrentHp} / ${playerMaxHp}`;
       document.getElementById('player-hp-bar').style.width = `${playerPct}%`;
+
+      document.getElementById('player-mp-text').innerText = `${playerCurrentMp} / ${playerMaxMp}`;
+      document.getElementById('player-mp-bar').style.width = `${mpPct}%`;
     }
 
     function logBattleMessage(msg) {
@@ -685,44 +851,39 @@
       log.scrollTop = log.scrollHeight;
     }
 
-    function calculatePlayerDamage() {
-      const userLvl = currentUserProfile ? currentUserProfile.level : 1;
-      const userStreak = currentUserProfile ? currentUserProfile.streak_count : 0;
-      const inventory = currentUserProfile ? (currentUserProfile.inventory || []) : [];
-
-      let baseDmg = 10 + (userLvl * 3); 
-      let streakBonus = userStreak * 2;
-
-      let gearBonus = 0;
-      if (inventory.length > 0 && cachedItems.length > 0) {
-        inventory.forEach(itemName => {
-          const itemData = cachedItems.find(i => i.name === itemName);
-          if (itemData && itemData.attack_bonus) {
-            gearBonus += itemData.attack_bonus;
-          }
-        });
-      }
-
-      let rngDmg = Math.floor(Math.random() * 11);
-      let totalDmg = baseDmg + streakBonus + gearBonus + rngDmg;
-
-      const isCrit = Math.random() < 0.15;
-      if (isCrit) {
-        totalDmg = totalDmg * 2;
-      }
-
-      return { damage: totalDmg, isCrit, gearBonus };
-    }
-
     function executePlayerAttack() {
-      const attackInfo = calculatePlayerDamage();
-
-      bossCurrentHp = Math.max(0, bossCurrentHp - attackInfo.damage);
+      const p = currentUserProfile || {};
+      const mainStat = p.class === 'Ranger' || p.class === 'Rogue' ? (p.dex || 10) : (p.str || 10);
       
-      if (attackInfo.isCrit) {
-        logBattleMessage(`💥 <b style="color:#ffeb3b;">CRITICAL HIT!</b> Du anfaller och gör <b style="color:#aed581;">${attackInfo.damage} skada</b>!`);
+      // Accuracy / Hit Chance Calculation
+      const hitChance = 0.75 + (mainStat * 0.015) - ((currentBossNode?.node || 1) * 0.02);
+      const isHit = Math.random() < hitChance;
+
+      if (!isHit) {
+        logBattleMessage(`<span style="color:#aaa;">💨 Du svingar men <b>MISSSAR</b> ditt slag!</span>`);
       } else {
-        logBattleMessage(`Du anfaller och gör <b style="color:#aed581;">${attackInfo.damage} skada</b>!`);
+        let baseDmg = 8 + (mainStat * 1.5);
+        let gearBonus = 0;
+
+        (p.inventory || []).forEach(itemName => {
+          const itemData = cachedItems.find(i => i.name === itemName);
+          if (itemData && itemData.attack_bonus) gearBonus += itemData.attack_bonus;
+        });
+
+        let totalDmg = Math.floor(baseDmg + gearBonus + (Math.random() * 8));
+
+        // Crit Chance (Dex Modifier)
+        const critChance = 0.10 + ((p.dex || 10) * 0.01);
+        const isCrit = Math.random() < critChance;
+        if (isCrit) totalDmg = Math.floor(totalDmg * 2);
+
+        bossCurrentHp = Math.max(0, bossCurrentHp - totalDmg);
+
+        if (isCrit) {
+          logBattleMessage(`💥 <b style="color:#ffeb3b;">CRITICAL HIT!</b> Du anfaller och gör <b style="color:#aed581;">${totalDmg} skada</b>!`);
+        } else {
+          logBattleMessage(`Du anfaller och gör <b style="color:#aed581;">${totalDmg} skada</b>!`);
+        }
       }
 
       updateBattleHpUi();
@@ -736,10 +897,56 @@
         return;
       }
 
+      executeBossTurn();
+    }
+
+    function executeCastSpell() {
+      const p = currentUserProfile || {};
+      const manaCost = 15;
+
+      if (playerCurrentMp < manaCost) {
+        logBattleMessage(`<span style="color:#ff8a80;">⚠️ Du har inte tillräckligt med Mana (kräver ${manaCost} MP)!</span>`);
+        return;
+      }
+
+      playerCurrentMp -= manaCost;
+      const intVal = p.int_stat || 10;
+      const spellDmg = Math.floor(20 + (intVal * 2.2) + (Math.random() * 10));
+
+      bossCurrentHp = Math.max(0, bossCurrentHp - spellDmg);
+      logBattleMessage(`🔮 Du kastar en kraftfull besvärjelse och gör <b style="color:#ba68c8;">${spellDmg} magisk skada</b>!`);
+
+      updateBattleHpUi();
+
+      if (bossCurrentHp <= 0) {
+        logBattleMessage(`<b style="color:#ffeb3b;">🎉 SEGER! Du har besegrat bossen!</b>`);
+        setTimeout(() => {
+          alert('🎉 GRATTIS! Du besegrade Månadsbossen och belönas med +50 Coins och +100 XP!');
+          claimBossVictoryRewards();
+        }, 600);
+        return;
+      }
+
+      executeBossTurn();
+    }
+
+    function executeBossTurn() {
       setTimeout(() => {
-        const bossDmgRoll = Math.floor(Math.random() * 5) + bossDamage;
-        playerCurrentHp = Math.max(0, playerCurrentHp - bossDmgRoll);
-        logBattleMessage(`Bossen slår tillbaka och gör <b style="color:#ff8a80;">${bossDmgRoll} skada</b> på dig!`);
+        const p = currentUserProfile || {};
+        const agiVal = p.agi || 10;
+        
+        // Evasion Chance based on Agility
+        const dodgeChance = 0.05 + (agiVal * 0.015);
+        const isDodged = Math.random() < dodgeChance;
+
+        if (isDodged) {
+          logBattleMessage(`⚡ <b style="color:#81d4fa;">Du snabb-undviker bossens attack helt!</b>`);
+        } else {
+          const bossDmgRoll = Math.floor(Math.random() * 6) + bossDamage;
+          playerCurrentHp = Math.max(0, playerCurrentHp - bossDmgRoll);
+          logBattleMessage(`Bossen slår tillbaka och gör <b style="color:#ff8a80;">${bossDmgRoll} skada</b> på dig!`);
+        }
+
         updateBattleHpUi();
 
         if (playerCurrentHp <= 0) {
@@ -765,9 +972,11 @@
       inventory.splice(itemIdx, 1);
       currentUserProfile.inventory = inventory;
 
-      const healAmt = 40;
+      const healAmt = 50;
       playerCurrentHp = Math.min(playerMaxHp, playerCurrentHp + healAmt);
-      logBattleMessage(`🧪 Du dricker en Magisk Dryck och återställer <b style="color:#81c784;">${healAmt} HP</b>!`);
+      playerCurrentMp = Math.min(playerMaxMp, playerCurrentMp + 25);
+
+      logBattleMessage(`🧪 Du dricker en Magisk Dryck och återställer <b style="color:#81c784;">${healAmt} HP</b> & 25 MP!`);
       updateBattleHpUi();
 
       renderInventory(inventory);
@@ -1099,11 +1308,13 @@
         }
 
         currentUserProfile = profile;
-        document.getElementById('user-name').innerText = 'Hej ' + profile.full_name + '!';
-        document.getElementById('user-coins').innerText = profile.coins || 0;
-        document.getElementById('user-streak').innerText = profile.streak_count || 0;
-        updateXpBar(profile.xp || 0, profile.level || 1);
-        renderInventory(profile.inventory || []);
+        renderProfileUi();
+
+        // Öppna Character Creation om spelaren inte valt ras/klass ännu
+        if (!profile.race || !profile.class) {
+          updateCharPreview();
+          document.getElementById('char-create-modal').style.display = 'flex';
+        }
 
         if (profile.role === 'admin') {
           document.getElementById('admin-link-btn').style.display = 'block';
